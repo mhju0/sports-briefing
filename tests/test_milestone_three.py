@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import datetime, timezone
 from email.message import Message
 import io
 import json
@@ -35,6 +36,13 @@ FIXTURES = Path(__file__).parent / "fixtures"
 TEXANS_ID = "82d2d380-3834-4938-835f-aec541e5ece7"
 
 
+class FixtureDateTime(datetime):
+    @classmethod
+    def now(cls, tz=None):
+        fixture_time = cls(2026, 9, 20, 12, 0, tzinfo=timezone.utc)
+        return fixture_time if tz is None else fixture_time.astimezone(tz)
+
+
 def load(name: str) -> dict[str, object]:
     return json.loads((FIXTURES / name).read_text(encoding="utf-8"))
 
@@ -64,6 +72,9 @@ class TexansMilestoneTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.database = Path(self.temp.name) / "sports.sqlite3"
+        clock = patch("sports_briefing.cli.datetime", FixtureDateTime)
+        clock.start()
+        self.addCleanup(clock.stop)
         self.schedule = load("texans_schedule.json")
         self.limited = load("texans_injuries_limited.json")
         self.dnp = load("texans_injuries_dnp.json")
