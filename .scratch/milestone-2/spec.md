@@ -1,6 +1,6 @@
 # Milestone 2: Arsenal HTTP and iPhone slice
 
-Status: in-progress
+Status: complete
 
 Authorized 2026-09-20. Review baseline: `05fd86b`.
 
@@ -41,4 +41,9 @@ Before changes, all 21 existing offline tests passed.
 - Visually inspected backend-unavailable state after stopping the server, absent-briefing state using the real API against a temporary missing database, and loading/unexpected-response states with a temporary delayed loopback stub. The real database was not changed for failure tests. Restored the real server and hidden briefing afterward.
 - Temporary screenshots: `/tmp/sports-briefing-m2-{live,unavailable,empty,loading,malformed}.png`. They are session evidence, not versioned product assets. Physical-device networking and production operation were not tested.
 
-Final independent review and integration are pending.
+Final gate completed on 2026-09-20:
+
+- Implementation commits: `4ba8b56` and `fc89ee0`. Independent Spec/correctness and Standards review passed exact frozen code `fc89ee03bdfe7c7ab368e9b97f6c7dec4ca3d3dd` with no outstanding blocking findings. The generated app target and XcodeGen source both target iPhone only.
+- A review concern about view-owned refresh cancellation was tested rather than assumed. Two temporary XCUITests against the actual API with a two-second delay passed: intentional reveal displayed a numeric result and duration; pull-to-refresh returned to the hidden loaded state without error. No cancellation defect was reproduced and no state-management framework or permanent UI-test target was added. The temporary test project is `/tmp/sports-briefing-m2-ui.jE10mU`; it is session evidence only.
+- The regular seven Swift cases passed again after the device-family alignment. M1 application files, schema and original tests are unchanged from the baseline. No provider credential, SQLite file, virtual environment, build output or user-specific Xcode state is committed.
+- Completion is local implementation/test/live-data-to-simulator verification. No push, production deployment or physical-iPhone verification is claimed.

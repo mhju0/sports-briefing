@@ -1,6 +1,6 @@
 # Milestone 2: local Arsenal API and iPhone
 
-The existing Python ingestion and SQLite database feed a thin FastAPI read endpoint and a single SwiftUI iPhone screen. Coverage remains **Arsenal, Premier League and UEFA Champions League only**. Refreshing the app reads saved data; it does not fetch football-data.org.
+Completed and verified locally on 2026-09-20. The existing Python ingestion and SQLite database feed a thin FastAPI read endpoint and a single SwiftUI iPhone screen. Coverage remains **Arsenal, Premier League and UEFA Champions League only**. Refreshing the app reads saved data; it does not fetch football-data.org.
 
 ## Run locally
 
