@@ -143,6 +143,33 @@ class MilestoneOneTests(unittest.TestCase):
 
     @patch.dict(os.environ, {"FOOTBALL_DATA_API_KEY": "test-key"})
     @patch("sports_briefing.football_data.urlopen")
+    def test_reserved_characters_in_database_path_survive_process_restart(self, fetch) -> None:
+        self.db_path = Path(self.temp_dir.name) / "briefing #1?.sqlite3"
+        fetch.return_value = FakeHTTPResponse(load_response())
+        self.assertEqual(self.run_cli(*self.ingest_args())[0], 0)
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "sports_briefing",
+                "briefing",
+                "arsenal",
+                "--db",
+                str(self.db_path),
+                "--as-of",
+                "2026-09-20T12:00:00Z",
+            ],
+            cwd=Path(__file__).parents[1],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual(json.loads(completed.stdout)["next_match"]["provider_match_id"], "5002")
+
+    @patch.dict(os.environ, {"FOOTBALL_DATA_API_KEY": "test-key"})
+    @patch("sports_briefing.football_data.urlopen")
     def test_network_failure_preserves_existing_fixtures(self, fetch) -> None:
         fetch.return_value = FakeHTTPResponse(load_response())
         self.assertEqual(self.run_cli(*self.ingest_args())[0], 0)
@@ -190,6 +217,10 @@ class MilestoneOneTests(unittest.TestCase):
         briefing = json.loads(first)
         self.assertEqual(briefing["latest_completed_match"]["score"], {"away": 0, "home": 3})
         self.assertEqual(briefing["next_match"]["competition_code"], "CL")
+        self.assertEqual(
+            briefing["source"]["attribution"],
+            "Football data provided by the Football-Data.org API",
+        )
 
     @patch.dict(os.environ, {"FOOTBALL_DATA_API_KEY": "test-key"})
     @patch("sports_briefing.football_data.urlopen")
@@ -214,6 +245,35 @@ class MilestoneOneTests(unittest.TestCase):
         briefing = json.loads(output)
         self.assertTrue(briefing["latest_completed_match"]["result_hidden"])
         self.assertEqual(briefing["latest_completed_match"]["status"], "FINISHED")
+        self.assertEqual(
+            briefing["source"]["attribution"],
+            "Football data provided by the Football-Data.org API",
+        )
+
+    @patch.dict(os.environ, {"FOOTBALL_DATA_API_KEY": "test-key"})
+    @patch("sports_briefing.football_data.urlopen")
+    def test_briefing_orders_fractional_kickoffs_chronologically(self, fetch) -> None:
+        payload = load_response()
+        fractional = json.loads(json.dumps(payload["matches"][0]))
+        fractional["id"] = 5003
+        fractional["utcDate"] = "2026-09-13T15:30:00.100000Z"
+        fractional["lastUpdated"] = "2026-09-13T17:41:00Z"
+        payload["matches"].append(fractional)
+        payload["resultSet"]["count"] = 4
+        fetch.return_value = FakeHTTPResponse(payload)
+        self.assertEqual(self.run_cli(*self.ingest_args())[0], 0)
+
+        briefing = json.loads(
+            self.run_cli(
+                "briefing",
+                "arsenal",
+                "--db",
+                str(self.db_path),
+                "--as-of",
+                "2026-09-20T12:00:00Z",
+            )[1]
+        )
+        self.assertEqual(briefing["latest_completed_match"]["provider_match_id"], "5003")
 
     @patch.dict(os.environ, {"FOOTBALL_DATA_API_KEY": "test-key"})
     @patch("sports_briefing.football_data.urlopen")

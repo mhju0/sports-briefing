@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import closing
 from dataclasses import asdict
 from pathlib import Path
 import sqlite3
@@ -93,8 +94,9 @@ class StorageError(Exception):
 
 def initialize_database(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with sqlite3.connect(path) as connection:
-        connection.executescript(SCHEMA)
+    with closing(sqlite3.connect(path)) as connection:
+        with connection:
+            connection.executescript(SCHEMA)
 
 
 def record_failed_fetch(
@@ -112,31 +114,32 @@ def record_failed_fetch(
     raw_response: str | None,
 ) -> None:
     raw, truncated = _bounded_raw(raw_response)
-    with sqlite3.connect(path) as connection:
-        connection.execute(
-            """
-            INSERT INTO provider_fetches (
-                provider, entity, request_url, date_from, date_to, started_at, completed_at,
-                http_status, outcome, error_stage, error_message, raw_response,
-                raw_response_truncated
-            ) VALUES (?, 'arsenal', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                PROVIDER,
-                request_url,
-                date_from,
-                date_to,
-                started_at,
-                completed_at,
-                http_status,
-                outcome,
-                error_stage,
-                error_message,
-                raw,
-                int(truncated),
-            ),
-        )
-        _prune_fetches(connection)
+    with closing(sqlite3.connect(path)) as connection:
+        with connection:
+            connection.execute(
+                """
+                INSERT INTO provider_fetches (
+                    provider, entity, request_url, date_from, date_to, started_at, completed_at,
+                    http_status, outcome, error_stage, error_message, raw_response,
+                    raw_response_truncated
+                ) VALUES (?, 'arsenal', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    PROVIDER,
+                    request_url,
+                    date_from,
+                    date_to,
+                    started_at,
+                    completed_at,
+                    http_status,
+                    outcome,
+                    error_stage,
+                    error_message,
+                    raw,
+                    int(truncated),
+                ),
+            )
+            _prune_fetches(connection)
 
 
 def persist_successful_fetch(
@@ -156,50 +159,51 @@ def persist_successful_fetch(
     fixture_list = list(fixtures)
     raw, truncated = _bounded_raw(raw_response)
     counts = {"inserted": 0, "updated": 0, "no_change": 0}
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection:
         connection.row_factory = sqlite3.Row
-        connection.execute("BEGIN IMMEDIATE")
-        for fixture in fixture_list:
-            outcome = _upsert_fixture(
-                connection,
-                fixture,
-                source_url=request_url,
-                fetched_at=completed_at,
+        with connection:
+            connection.execute("BEGIN IMMEDIATE")
+            for fixture in fixture_list:
+                outcome = _upsert_fixture(
+                    connection,
+                    fixture,
+                    source_url=request_url,
+                    fetched_at=completed_at,
+                )
+                counts[outcome] += 1
+            connection.execute(
+                """
+                INSERT INTO provider_fetches (
+                    provider, entity, request_url, date_from, date_to, started_at, completed_at,
+                    http_status, outcome, raw_response, raw_response_truncated, received_count,
+                    supported_count, filtered_unsupported_count, inserted_count, updated_count,
+                    no_change_count
+                ) VALUES (?, 'arsenal', ?, ?, ?, ?, ?, ?, 'success', ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    PROVIDER,
+                    request_url,
+                    date_from,
+                    date_to,
+                    started_at,
+                    completed_at,
+                    http_status,
+                    raw,
+                    int(truncated),
+                    received_count,
+                    len(fixture_list),
+                    filtered_unsupported_count,
+                    counts["inserted"],
+                    counts["updated"],
+                    counts["no_change"],
+                ),
             )
-            counts[outcome] += 1
-        connection.execute(
-            """
-            INSERT INTO provider_fetches (
-                provider, entity, request_url, date_from, date_to, started_at, completed_at,
-                http_status, outcome, raw_response, raw_response_truncated, received_count,
-                supported_count, filtered_unsupported_count, inserted_count, updated_count,
-                no_change_count
-            ) VALUES (?, 'arsenal', ?, ?, ?, ?, ?, ?, 'success', ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                PROVIDER,
-                request_url,
-                date_from,
-                date_to,
-                started_at,
-                completed_at,
-                http_status,
-                raw,
-                int(truncated),
-                received_count,
-                len(fixture_list),
-                filtered_unsupported_count,
-                counts["inserted"],
-                counts["updated"],
-                counts["no_change"],
-            ),
-        )
-        _prune_fetches(connection)
+            _prune_fetches(connection)
     return counts
 
 
 def inspect_state(path: Path) -> dict[str, Any]:
-    with _read_only(path) as connection:
+    with closing(_read_only(path)) as connection:
         connection.row_factory = sqlite3.Row
         fixtures = connection.execute(
             "SELECT * FROM football_fixtures ORDER BY kickoff_utc, provider_match_id"
@@ -219,7 +223,7 @@ def inspect_state(path: Path) -> dict[str, Any]:
 
 
 def load_briefing_state(path: Path, as_of: str | None) -> tuple[list[dict[str, Any]], str, dict[str, Any]]:
-    with _read_only(path) as connection:
+    with closing(_read_only(path)) as connection:
         connection.row_factory = sqlite3.Row
         latest = connection.execute(
             "SELECT * FROM provider_fetches WHERE outcome = 'success' ORDER BY id DESC LIMIT 1"
@@ -390,6 +394,6 @@ def _read_only(path: Path) -> sqlite3.Connection:
     if not path.is_file():
         raise StorageError(f"database does not exist: {path}")
     try:
-        return sqlite3.connect(f"file:{path.resolve()}?mode=ro", uri=True)
+        return sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
     except sqlite3.Error as exc:
         raise StorageError(f"could not open database: {exc}") from exc

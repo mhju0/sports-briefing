@@ -3,6 +3,3 @@ name = "sports-briefing"
 version = "0.1.0"
 description = "Deterministic personal sports briefing pipeline"
 requires-python = ">=3.11"
-
-[tool.unittest]
-start-directory = "tests"

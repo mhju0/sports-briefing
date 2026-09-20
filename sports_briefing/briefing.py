@@ -10,6 +10,7 @@ from .storage import load_briefing_state
 
 COMPLETED_STATUSES = frozenset({"FINISHED", "AWARDED"})
 UPCOMING_STATUSES = frozenset({"SCHEDULED", "TIMED", "POSTPONED", "SUSPENDED"})
+FOOTBALL_DATA_ATTRIBUTION = "Football data provided by the Football-Data.org API"
 
 
 class BriefingError(Exception):
@@ -38,8 +39,8 @@ def build_arsenal_briefing(
         if row["status"] in UPCOMING_STATUSES
         and _parse_timestamp(row["kickoff_utc"], "fixture kickoff") >= as_of_dt
     ]
-    latest = max(completed, key=lambda row: (row["kickoff_utc"], row["provider_match_id"]), default=None)
-    next_match = min(upcoming, key=lambda row: (row["kickoff_utc"], row["provider_match_id"]), default=None)
+    latest = max(completed, key=_chronological_key, default=None)
+    next_match = min(upcoming, key=_chronological_key, default=None)
 
     return {
         "entity": "Arsenal",
@@ -49,6 +50,7 @@ def build_arsenal_briefing(
         "latest_completed_match": _completed_projection(latest, hide_results),
         "source": {
             "provider": fetch["provider"],
+            "attribution": FOOTBALL_DATA_ATTRIBUTION,
             "fetched_at": fetch["completed_at"],
             "window": {"from": fetch["date_from"], "to_exclusive": fetch["date_to"]},
         },
@@ -91,6 +93,10 @@ def _completed_projection(row: dict[str, Any] | None, hide_results: bool) -> dic
     if projected is not None and hide_results:
         projected["result_hidden"] = True
     return projected
+
+
+def _chronological_key(row: dict[str, Any]) -> tuple[datetime, str]:
+    return _parse_timestamp(row["kickoff_utc"], "fixture kickoff"), row["provider_match_id"]
 
 
 def _parse_timestamp(value: str, label: str) -> datetime:
