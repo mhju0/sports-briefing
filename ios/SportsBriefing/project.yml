@@ -29,6 +29,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.michaelju.sportsbriefing
+        TARGETED_DEVICE_FAMILY: "1"
   SportsBriefingTests:
     type: bundle.unit-test
     platform: iOS
