@@ -1,6 +1,6 @@
 # Milestone 1: Arsenal fixture/result ingestion
 
-Status: in-progress
+Status: complete
 
 Authorized 2026-09-20 by the user's Milestone 1 request. Review baseline: `986ed4afde17ad7e04757b13273e011bec663179`.
 
@@ -23,4 +23,12 @@ Retain provider/record IDs, source and fetch times, and bounded raw diagnostics.
 
 ## Delivery evidence
 
-Pending implementation and review. Live provider operation must be labeled separately from deterministic fixture-based verification. A missing credential does not prevent offline test completion.
+Completed 2026-09-20. Implementation commits: `c6359fe` and `3a1aa81`.
+
+- All 21 offline tests pass (`python3 -m unittest discover -s tests -v`), including real SQLite rollback, subprocess restart/readback, reserved-character filenames, HTTP errors, idempotency, updates, deterministic output and spoiler-safe projection.
+- `python3 -m compileall -q sports_briefing tests` and `git diff --check` pass.
+- Manual mocked-transport CLI ingestion in separate processes inserted two supported fixtures, then reported two no-ops. Persisted readback and shown/hidden briefings succeeded; repeated hidden output was identical.
+- Independent Standards review found no blocking violations. Removed inert unittest configuration; retained the small, justified failure-handler duplication and documented field-order coupling as nonblocking review observations.
+- Independent Spec review of frozen implementation `3a1aa81ed6394cdabb0b735ac496ccb96fafbbb7` passed after fixing encoded SQLite paths, provider attribution and datetime ordering. Explicit connection closure preserves transaction commit/rollback.
+
+Live authenticated ingestion remains unverified: no provider credential was configured and no live request was made. Configure a personal credential and follow `docs/milestone-1.md` for the first account-level smoke check. Offline verification does not establish actual account coverage or provider latency.
