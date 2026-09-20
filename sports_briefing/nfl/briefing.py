@@ -5,13 +5,11 @@ from pathlib import Path
 from typing import Any
 
 from ..briefing import BriefingError
+from .game_policy import is_upcoming_game_status
 from .storage import load_texans_briefing_state
 
 
 SPORTRADAR_ATTRIBUTION = "NFL data provided by Sportradar"
-UPCOMING_STATUSES = frozenset({"scheduled", "created", "time-tbd", "flex-schedule"})
-
-
 def build_texans_briefing(database: Path, *, as_of: str | None = None) -> dict[str, Any]:
     normalized_as_of = _timestamp(as_of, "--as-of") if as_of else None
     games, availability, changes, revisions, effective_as_of, fetch = load_texans_briefing_state(
@@ -21,7 +19,7 @@ def build_texans_briefing(database: Path, *, as_of: str | None = None) -> dict[s
     upcoming = [
         game
         for game in games
-        if game["status"].lower() in UPCOMING_STATUSES
+        if is_upcoming_game_status(game["status"])
         and _parse_timestamp(game["scheduled_utc"], "game scheduled time") >= as_of_time
     ]
     next_game = min(upcoming, key=_game_key, default=None)

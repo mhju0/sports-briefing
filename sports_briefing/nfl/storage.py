@@ -92,7 +92,6 @@ CREATE TABLE IF NOT EXISTS nfl_source_revisions (
     provider_generated_at TEXT NOT NULL,
     semantic_hash TEXT NOT NULL,
     report_date TEXT,
-    latest_known_report_date TEXT,
     accepted_at TEXT NOT NULL,
     source_url TEXT NOT NULL,
     PRIMARY KEY (provider, endpoint_key)
@@ -165,15 +164,13 @@ def persist_texans_fetch(
         with connection:
             connection.execute("BEGIN IMMEDIATE")
             schedule_state = _revision_state(
-                connection, schedule_key, schedule_generated_at, schedule_hash, None
+                connection, schedule_key, schedule_generated_at, schedule_hash
             )
             injuries_state = _revision_state(
                 connection,
                 injuries_key,
                 injuries_generated_at,
                 injuries_hash,
-                injuries.report_date,
-                allow_unknown_report_date=not injuries.players,
             )
             if schedule_state == "new":
                 for game in schedule.games:
@@ -186,20 +183,14 @@ def persist_texans_fetch(
                     )
                     counts[f"games_{outcome}"] += 1
                 for provider_game_id in schedule.deleted_game_ids:
-                    changed = connection.execute(
-                        """
-                        UPDATE nfl_games
-                        SET status='deleted', provider_generated_at=?, source_url=?, last_seen_at=?
-                        WHERE provider=? AND provider_game_id=? AND status!='deleted'
-                        """,
-                        (
-                            schedule_generated_at,
-                            schedule_url,
-                            completed_at,
-                            PROVIDER,
-                            provider_game_id,
-                        ),
-                    ).rowcount
+                    changed = _mark_deleted_game(
+                        connection,
+                        schedule,
+                        provider_game_id,
+                        generated_at=schedule_generated_at,
+                        source_url=schedule_url,
+                        observed_at=completed_at,
+                    )
                     counts["games_updated"] += changed
             else:
                 counts["games_no_change"] = len(schedule.games)
@@ -356,9 +347,6 @@ def _revision_state(
     endpoint_key: str,
     generated_at: str,
     semantic_hash: str,
-    report_date: str | None,
-    *,
-    allow_unknown_report_date: bool = False,
 ) -> str:
     incoming = _parse_timestamp(generated_at, "provider revision")
     current = connection.execute(
@@ -374,12 +362,6 @@ def _revision_state(
         if current["semantic_hash"] != semantic_hash:
             raise StorageError(f"conflicting payload for equal provider revision: {endpoint_key}")
         return "identical"
-    stored_report_date = current["latest_known_report_date"]
-    if stored_report_date is not None and report_date is None and not allow_unknown_report_date:
-        raise StorageError(f"report date regressed to unknown for {endpoint_key}")
-    if stored_report_date is not None and report_date is not None:
-        if _parse_timestamp(report_date, "report date") < _parse_timestamp(stored_report_date, "stored report date"):
-            raise StorageError(f"report date regressed for {endpoint_key}")
     return "new"
 
 
@@ -388,16 +370,12 @@ def _save_revision(connection: sqlite3.Connection, endpoint_key: str, generated_
         """
         INSERT INTO nfl_source_revisions (
             provider, endpoint_key, provider_generated_at, semantic_hash, report_date,
-            latest_known_report_date, accepted_at, source_url
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            accepted_at, source_url
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(provider, endpoint_key) DO UPDATE SET
             provider_generated_at = excluded.provider_generated_at,
             semantic_hash = excluded.semantic_hash,
             report_date = excluded.report_date,
-            latest_known_report_date = COALESCE(
-                excluded.latest_known_report_date,
-                nfl_source_revisions.latest_known_report_date
-            ),
             accepted_at = excluded.accepted_at,
             source_url = excluded.source_url
         """,
@@ -406,7 +384,6 @@ def _save_revision(connection: sqlite3.Connection, endpoint_key: str, generated_
             endpoint_key,
             generated_at,
             semantic_hash,
-            report_date,
             report_date,
             accepted_at,
             source_url,
@@ -454,8 +431,28 @@ def _upsert_game(connection: sqlite3.Connection, game: NFLGame, *, generated_at:
             ),
         )
         return "inserted"
+    current_scope = (
+        current["season_id"],
+        current["season_year"],
+        current["season_type"],
+    )
+    incoming_scope = (game.season_id, game.season_year, game.season_type)
+    if current_scope != incoming_scope:
+        raise StorageError(
+            f"provider game {game.provider_game_id} was reused across season scopes"
+        )
+    incoming_revision = _parse_timestamp(generated_at, "game provider revision")
+    current_revision = _parse_timestamp(
+        current["provider_generated_at"], "stored game provider revision"
+    )
+    if incoming_revision < current_revision:
+        raise StorageError(f"stale provider revision for game {game.provider_game_id}")
     semantic = tuple(values[key] for key in values if key != "raw_record_json")
     current_semantic = tuple(current[key] for key in values if key != "raw_record_json")
+    if incoming_revision == current_revision and semantic != current_semantic:
+        raise StorageError(
+            f"conflicting payload for equal game revision: {game.provider_game_id}"
+        )
     if semantic == current_semantic:
         connection.execute(
             "UPDATE nfl_games SET provider_generated_at=?, raw_record_json=?, source_url=?, last_seen_at=? WHERE id=?",
@@ -468,6 +465,54 @@ def _upsert_game(connection: sqlite3.Connection, game: NFLGame, *, generated_at:
         (*values.values(), generated_at, source_url, observed_at, current["id"]),
     )
     return "updated"
+
+
+def _mark_deleted_game(
+    connection: sqlite3.Connection,
+    schedule: ScheduleSnapshot,
+    provider_game_id: str,
+    *,
+    generated_at: str,
+    source_url: str,
+    observed_at: str,
+) -> int:
+    current = connection.execute(
+        "SELECT * FROM nfl_games WHERE provider=? AND provider_game_id=?",
+        (PROVIDER, provider_game_id),
+    ).fetchone()
+    if current is None:
+        return 0
+    current_scope = (
+        current["season_id"],
+        current["season_year"],
+        current["season_type"],
+    )
+    incoming_scope = (schedule.season_id, schedule.season_year, schedule.season_type)
+    if current_scope != incoming_scope:
+        raise StorageError(
+            f"deleted provider game {provider_game_id} belongs to another season scope"
+        )
+    incoming_revision = _parse_timestamp(generated_at, "deleted game provider revision")
+    current_revision = _parse_timestamp(
+        current["provider_generated_at"], "stored game provider revision"
+    )
+    if incoming_revision < current_revision:
+        raise StorageError(f"stale provider revision for deleted game {provider_game_id}")
+    if incoming_revision == current_revision and current["status"] != "deleted":
+        raise StorageError(
+            f"conflicting deletion for equal game revision: {provider_game_id}"
+        )
+    if current["status"] == "deleted":
+        return 0
+    connection.execute(
+        """
+        UPDATE nfl_games
+        SET status='deleted', provider_generated_at=?, source_url=?, last_seen_at=?
+        WHERE id=?
+        """,
+        (generated_at, source_url, observed_at, current["id"]),
+    )
+    return 1
 
 
 def _apply_injury_snapshot(connection: sqlite3.Connection, snapshot: InjurySnapshot, *, generated_at: str, source_url: str, observed_at: str) -> dict[str, int]:
@@ -491,7 +536,19 @@ def _apply_injury_snapshot(connection: sqlite3.Connection, snapshot: InjurySnaps
         if current is None or not current["is_present"]:
             _upsert_availability(connection, snapshot, player, generated_at, source_url, observed_at)
             counts["availability_inserted"] += 1
-            _insert_change(connection, snapshot, player.player_id, player.player_name, "NEW_REPORT", None, _state_summary(player), generated_at, observed_at, source_url)
+            _insert_change(
+                connection,
+                snapshot,
+                player.player_id,
+                player.player_name,
+                "NEW_REPORT",
+                None,
+                _state_summary(player),
+                player.status_date,
+                generated_at,
+                observed_at,
+                source_url,
+            )
             counts["changes"] += 1
             continue
         changes = _player_changes(current, player)
@@ -499,7 +556,19 @@ def _apply_injury_snapshot(connection: sqlite3.Connection, snapshot: InjurySnaps
             _upsert_availability(connection, snapshot, player, generated_at, source_url, observed_at)
             counts["availability_updated"] += 1
             for change_type, old_value, new_value in changes:
-                _insert_change(connection, snapshot, player.player_id, player.player_name, change_type, old_value, new_value, generated_at, observed_at, source_url)
+                _insert_change(
+                    connection,
+                    snapshot,
+                    player.player_id,
+                    player.player_name,
+                    change_type,
+                    old_value,
+                    new_value,
+                    player.status_date,
+                    generated_at,
+                    observed_at,
+                    source_url,
+                )
                 counts["changes"] += 1
         else:
             _upsert_availability(
@@ -514,7 +583,19 @@ def _apply_injury_snapshot(connection: sqlite3.Connection, snapshot: InjurySnaps
             (generated_at, source_url, observed_at, current["id"]),
         )
         counts["availability_updated"] += 1
-        _insert_change(connection, snapshot, player_id, current["player_name"], "REMOVED_FROM_REPORT", _row_state_summary(current), None, generated_at, observed_at, source_url)
+        _insert_change(
+            connection,
+            snapshot,
+            player_id,
+            current["player_name"],
+            "REMOVED_FROM_REPORT",
+            _row_state_summary(current),
+            None,
+            None,
+            generated_at,
+            observed_at,
+            source_url,
+        )
         counts["changes"] += 1
     return counts
 
@@ -568,7 +649,19 @@ def _guard_player_report_date(current: str | None, incoming: str | None, player_
             raise StorageError(f"status date regressed for player {player_id}")
 
 
-def _insert_change(connection: sqlite3.Connection, snapshot: InjurySnapshot, player_id: str, player_name: str, change_type: str, old_value: str | None, new_value: str | None, generated_at: str, observed_at: str, source_url: str) -> None:
+def _insert_change(
+    connection: sqlite3.Connection,
+    snapshot: InjurySnapshot,
+    player_id: str,
+    player_name: str,
+    change_type: str,
+    old_value: str | None,
+    new_value: str | None,
+    report_date: str | None,
+    generated_at: str,
+    observed_at: str,
+    source_url: str,
+) -> None:
     identity = "|".join((str(snapshot.season_year), snapshot.season_type, str(snapshot.week), player_id, change_type, old_value or "<null>", new_value or "<null>", generated_at))
     change_key = hashlib.sha256(identity.encode()).hexdigest()
     connection.execute(
@@ -579,7 +672,7 @@ def _insert_change(connection: sqlite3.Connection, snapshot: InjurySnapshot, pla
             provider_generated_at, report_date, observed_at, source_url
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
-        (change_key, PROVIDER, snapshot.season_year, snapshot.season_type, snapshot.week, snapshot.week_id, snapshot.team_id, player_id, player_name, change_type, old_value, new_value, generated_at, snapshot.report_date, observed_at, source_url),
+        (change_key, PROVIDER, snapshot.season_year, snapshot.season_type, snapshot.week, snapshot.week_id, snapshot.team_id, player_id, player_name, change_type, old_value, new_value, generated_at, report_date, observed_at, source_url),
     )
 
 

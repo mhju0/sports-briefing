@@ -83,6 +83,8 @@ class TexansMilestoneTests(unittest.TestCase):
         *,
         schedule: dict[str, object] | None = None,
         week: int = 3,
+        season: int = 2026,
+        season_type: str = "REG",
     ) -> tuple[int, str, str]:
         responses = [
             FakeResponse(deepcopy(schedule or self.schedule), generated),
@@ -92,8 +94,8 @@ class TexansMilestoneTests(unittest.TestCase):
             "sports_briefing.nfl.sportradar.urlopen", side_effect=responses
         ), patch("sports_briefing.cli.time.sleep"):
             return self.run_cli(
-                "ingest", "texans", "--db", str(self.database), "--season", "2026",
-                "--season-type", "REG", "--week", str(week)
+                "ingest", "texans", "--db", str(self.database), "--season", str(season),
+                "--season-type", season_type, "--week", str(week)
             )
 
     def test_initial_ingestion_persists_game_status_and_new_report(self) -> None:
@@ -253,6 +255,7 @@ class TexansMilestoneTests(unittest.TestCase):
     def test_deleted_game_is_not_selected_as_next_game(self) -> None:
         self.assertEqual(self.ingest(self.limited, "Sat, 26 Sep 2026 12:00:00 GMT")[0], 0)
         deleted = deepcopy(self.schedule)
+        deleted["weeks"][0]["games"] = []
         deleted["deleted_games"] = [{"id": "game-texans-jaguars"}]
         week_four = deepcopy(self.limited)
         week_four["week"] = {"id": "week-4", "sequence": 4, "title": "4"}
@@ -291,7 +294,116 @@ class TexansMilestoneTests(unittest.TestCase):
         self.assertEqual(self.ingest(refreshed, "Sat, 26 Sep 2026 13:00:00 GMT")[0], 0)
         code, _, error = self.ingest(self.limited, "Sat, 26 Sep 2026 14:00:00 GMT")
         self.assertEqual(code, 1)
-        self.assertIn("report date regressed", error.lower())
+        self.assertIn("status date regressed", error.lower())
+
+    def test_newer_report_can_remove_latest_dated_player_without_rejecting_remaining_player(self) -> None:
+        initial = deepcopy(self.limited)
+        latest = initial["teams"][0]["players"][0]
+        latest["id"] = "player-latest"
+        latest["name"] = "Latest Dated Player"
+        latest["injuries"][0]["status_date"] = "2026-09-26T00:00:00Z"
+        remaining = deepcopy(latest)
+        remaining["id"] = "player-remaining"
+        remaining["name"] = "Remaining Player"
+        remaining["injuries"][0]["status_date"] = "2026-09-25T00:00:00Z"
+        initial["teams"][0]["players"] = [latest, remaining]
+        self.assertEqual(self.ingest(initial, "Sat, 26 Sep 2026 12:00:00 GMT")[0], 0)
+
+        newer = deepcopy(initial)
+        newer["teams"][0]["players"] = [deepcopy(remaining)]
+        code, _, error = self.ingest(newer, "Sat, 26 Sep 2026 13:00:00 GMT")
+        self.assertEqual(code, 0, error)
+        state = inspect_texans_state(self.database)
+        by_player = {row["player_id"]: row for row in state["availability"]}
+        self.assertEqual(by_player["player-latest"]["is_present"], 0)
+        self.assertEqual(by_player["player-remaining"]["is_present"], 1)
+
+        returned = deepcopy(initial)
+        returned["teams"][0]["players"][0]["injuries"][0]["status_date"] = "2026-09-27T00:00:00Z"
+        code, _, error = self.ingest(returned, "Sun, 27 Sep 2026 01:00:00 GMT")
+        self.assertEqual(code, 0, error)
+        latest_changes = inspect_texans_state(self.database)["changes"]
+        self.assertEqual(latest_changes[-1]["change_type"], "NEW_REPORT")
+        self.assertEqual(latest_changes[-1]["player_id"], "player-latest")
+
+    def test_change_report_date_comes_from_changed_player(self) -> None:
+        initial = deepcopy(self.limited)
+        first = initial["teams"][0]["players"][0]
+        first["injuries"][0]["status_date"] = "2026-09-26T00:00:00Z"
+        second = deepcopy(first)
+        second["id"] = "player-second"
+        second["name"] = "Second Player"
+        second["injuries"][0]["status_date"] = "2026-09-25T00:00:00Z"
+        initial["teams"][0]["players"] = [first, second]
+        self.assertEqual(self.ingest(initial, "Sat, 26 Sep 2026 12:00:00 GMT")[0], 0)
+
+        changed = deepcopy(initial)
+        for player in changed["teams"][0]["players"]:
+            player["injuries"][0]["practice"]["status"] = "Did Not Participate In Practice"
+        self.assertEqual(self.ingest(changed, "Sat, 26 Sep 2026 13:00:00 GMT")[0], 0)
+
+        practice_changes = [
+            row for row in inspect_texans_state(self.database)["changes"]
+            if row["change_type"] == "PRACTICE_STATUS_CHANGED"
+        ]
+        by_player = {row["player_id"]: row["report_date"] for row in practice_changes}
+        self.assertEqual(by_player["player-collins"], "2026-09-26T00:00:00Z")
+        self.assertEqual(by_player["player-second"], "2026-09-25T00:00:00Z")
+
+    def test_cross_season_game_id_reuse_and_deletion_roll_back_whole_batch(self) -> None:
+        self.assertEqual(self.ingest(self.limited, "Sat, 26 Sep 2026 13:00:00 GMT")[0], 0)
+        prior = inspect_texans_state(self.database)
+        prior_changes = len(prior["changes"])
+
+        reused = deepcopy(self.schedule)
+        reused.update({"id": "season-2025-reg", "year": 2025})
+        injuries_2025 = deepcopy(self.limited)
+        injuries_2025["season"].update({"id": "season-2025-reg", "year": 2025})
+        code, _, error = self.ingest(
+            injuries_2025,
+            "Sat, 26 Sep 2026 12:00:00 GMT",
+            schedule=reused,
+            season=2025,
+        )
+        self.assertEqual(code, 1)
+        self.assertIn("season scope", error.lower())
+
+        deleted = deepcopy(reused)
+        deleted["weeks"][0]["games"][0]["id"] = "game-2025-other"
+        deleted["weeks"][1]["games"][0]["id"] = "game-2025-other-week-4"
+        deleted["deleted_games"] = [{"id": "game-texans-jaguars"}]
+        code, _, error = self.ingest(
+            injuries_2025,
+            "Sat, 26 Sep 2026 14:00:00 GMT",
+            schedule=deleted,
+            season=2025,
+        )
+        self.assertEqual(code, 1)
+        self.assertIn("another season scope", error.lower())
+        after = inspect_texans_state(self.database)
+        self.assertEqual(after["games"], prior["games"])
+        self.assertEqual(len(after["changes"]), prior_changes)
+        self.assertFalse(any(row["season_year"] == 2025 for row in after["availability"]))
+
+    def test_cli_and_briefing_share_upcoming_game_status_policy(self) -> None:
+        schedule = deepcopy(self.schedule)
+        schedule["weeks"][0]["games"][0]["status"] = "postponed"
+        injuries = deepcopy(self.limited)
+        injuries["week"] = {"id": "week-4", "sequence": 4, "title": "4"}
+        responses = [
+            FakeResponse(schedule, "Sat, 26 Sep 2026 12:00:00 GMT"),
+            FakeResponse(injuries, "Sat, 26 Sep 2026 12:00:02 GMT"),
+        ]
+        with patch.dict(os.environ, {"SPORTRADAR_API_KEY": "secret"}), patch(
+            "sports_briefing.nfl.sportradar.urlopen", side_effect=responses
+        ), patch("sports_briefing.cli.time.sleep"):
+            code, output, error = self.run_cli(
+                "ingest", "texans", "--db", str(self.database)
+            )
+        self.assertEqual(code, 0, error)
+        self.assertEqual(json.loads(output)["scope"]["week"], 4)
+        briefing = build_texans_briefing(self.database, as_of="2026-09-26T12:30:00Z")
+        self.assertEqual(briefing["next_game"]["provider_game_id"], "game-titans-texans")
 
     def test_malformed_or_ambiguous_payload_fails_clearly(self) -> None:
         malformed = deepcopy(self.limited)

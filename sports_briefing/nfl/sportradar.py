@@ -172,6 +172,11 @@ def normalize_schedule(payload: dict[str, Any]) -> ScheduleSnapshot:
             deleted_game_ids.append(_text(deleted.get("id"), f"deleted_games[{index}].id"))
     if len(deleted_game_ids) != len(set(deleted_game_ids)):
         raise NormalizationError("schedule.deleted_games contains duplicate ids")
+    overlap = seen.intersection(deleted_game_ids)
+    if overlap:
+        raise NormalizationError(
+            f"schedule lists game as both active and deleted: {min(overlap)}"
+        )
     return ScheduleSnapshot(
         season_id,
         season_year,

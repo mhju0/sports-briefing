@@ -26,6 +26,7 @@ from .storage import (
     record_failed_fetch,
 )
 from .nfl.briefing import build_texans_briefing
+from .nfl.game_policy import is_upcoming_game_status
 from .nfl.sportradar import (
     NormalizationError as NFLNormalizationError,
     ProviderError as NFLProviderError,
@@ -425,7 +426,7 @@ def _target_texans_game(
         game
         for game in available
         if datetime.fromisoformat(game.scheduled_utc.replace("Z", "+00:00")) >= now
-        and game.status.lower() not in {"closed", "complete", "cancelled", "deleted"}
+        and is_upcoming_game_status(game.status)
     ]
     if not upcoming:
         raise NFLNormalizationError("schedule contains no upcoming Houston Texans game")

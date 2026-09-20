@@ -14,7 +14,7 @@ Do not add other NFL entities, opponent injury reports, roster/stat databases, n
 
 ## Provider gate
 
-Only football-data.org credentials were present at initial inspection. The user was asked to configure any available NFL credential without posting it in chat. No account creation, subscription or paid access is assumed.
+Only football-data.org credentials were present at initial inspection. The user was asked to configure any available NFL credential without posting it in chat, then confirmed that the NFL APIs are not ready yet. No account creation, subscription or paid access is assumed.
 
 Sportradar NFL v7 is the provisional single-provider implementation choice. Its official examples separate practice participation, game designation and status date. API-NFL does not document practice fidelity; SportsDataIO's current schema marks its practice fields deprecated. Full research and current source links are in `docs/milestone-3.md`.
 
@@ -36,8 +36,9 @@ Class 3: new persistent current/previous availability state and atomic change de
 
 Implementation complete — awaiting authenticated provider verification.
 
-- 52 offline Python tests pass, including all 31 existing Arsenal M1/M2 tests. New tests cover initial ingestion, identical rerun, recurring participation transitions, game designation, new players, old/equal-conflicting revisions, date regression after a no-op, week isolation, report absence, nulls, deleted games, rollback, network failure, process restart, deterministic briefing, HTTP projection and missing state.
+- 56 offline Python tests pass, including all 31 existing Arsenal M1/M2 tests. New tests cover initial ingestion, identical rerun, recurring participation transitions, game designation, new players, old/equal-conflicting revisions, date regression after a no-op, week isolation, report absence, nulls, deleted games, rollback, network failure, process restart, deterministic briefing, HTTP projection and missing state.
 - Independent smoke: a temporary SQLite backup of the real Arsenal DB accepted synthetic Limited → identical Limited → DNP responses (change counts 1, 0, 2). Separate CLI processes retained state and returned deterministic briefings. Actual loopback Uvicorn requests returned 200 for Texans and Arsenal; the Arsenal domain output was unchanged. The original database was not used for synthetic writes.
 - `git diff --check` and Python compile checks pass. No SwiftUI files or existing Arsenal test files changed.
 - Credentials rechecked: only `FOOTBALL_DATA_API_KEY` is present in local `.env`; no NFL credential was available. No authenticated Texans records, live header semantics, quota/errors or practice fidelity have been verified.
-- Frozen candidate independent review pending. M3 remains in-progress solely for the provider verification gate after implementation review is resolved.
+- First frozen candidate `460418d` did not pass independent review. Corrections add per-game revision/scope guards (including deletions), remove the invalid monotonic guard on the team-wide maximum player date, attribute changes to each player's own date, and align CLI/briefing upcoming-status policy. New regression cases reproduce the identified defects.
+- Corrected frozen candidate independent re-review pending. M3 remains in-progress for the provider verification gate after implementation review is resolved.
