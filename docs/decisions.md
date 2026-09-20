@@ -1,6 +1,6 @@
 # Decisions and architecture proposal
 
-Recorded 2026-09-20. Product decisions in [product-spec.md](product-spec.md) are accepted inputs. Everything labeled **proposal** below awaits user approval; no backend, client or infrastructure exists.
+Recorded 2026-09-20. Product decisions in [product-spec.md](product-spec.md) are accepted inputs. The user subsequently authorized Milestone 1: Python/SQLite Arsenal fixture ingestion and a deterministic CLI briefing, limited to PL/CL. The broader architecture below remains a proposal; it is not authorization for a server, client or infrastructure. Milestone scope/evidence is tracked [locally](../.scratch/milestone-1/spec.md).
 
 ## Decision register
 
@@ -103,13 +103,13 @@ Read-only inspection of `/Users/michaelju/Workspace/Projects/fullcourt` confirme
 
 These support separating observed facts, deterministic calculations and interpreted prose. They do not establish that this new product's providers or permissions work.
 
-## First coding milestone, after approval
+## First coding milestone, authorized scope
 
-**One private Arsenal fixture/result ingestion slice with persistence and a deterministic briefing.** This is an initial milestone, not a reduction of the three-entity V1 commitment.
+**One local Arsenal fixture/result ingestion slice with persistence and a deterministic briefing.** The user approved this bounded implementation after the initial proposal. It covers only Premier League and Champions League, not complete Arsenal or three-entity V1 coverage.
 
-Before starting: approve architecture and private-pilot intent, confirm provider terms/access, and agree whether delayed data is acceptable for this milestone. Use football-data.org PL/CL data if those gates pass; otherwise use clearly labeled synthetic fixtures to test logic while access remains unresolved. Synthetic data cannot verify provider feasibility.
+The CLI uses the user's football-data.org credential and preserves provenance; it does not promise live data. Deterministic tests use synthetic provider fixtures. Synthetic data cannot verify actual account entitlement, freshness or provider availability. No public release or paid subscription is part of the milestone.
 
-Deliver one CLI command: fetch a bounded Arsenal schedule/result window, validate and normalize it, persist to SQLite, rerun without duplication, and print at most one source-backed bilingual template briefing (or a truthful empty/stale state). No UI, LLM, deployment or additional provider in this slice.
+Deliver CLI commands to fetch a bounded Arsenal schedule/result window, validate and normalize it, persist to SQLite, rerun without duplication, inspect saved records and derive a deterministic next/latest-match representation. English output is sufficient; bilingual rendering is deferred by the milestone request. No UI, LLM, deployment or additional provider in this slice.
 
 Review examples before tests: upcoming → live → finished; unchanged rerun; postponement/correction; partial/malformed response; 429/timeout; restart and readback; spoiler-hidden output. Live transitions can be simulated to test rules, but only an entitled real endpoint can prove live freshness. Explain the data flow and inspect the diff together before broadening.
 
@@ -125,10 +125,10 @@ The release feasibility gate is **conditional**, not passed: public documentatio
 
 ## Repository and skill setup record
 
-The selected folder already existed with no project files and an empty commit `013b33a` (2026-09-20). Its history was preserved; `git init` safely reinitialized it. No remote is configured. This session adds only documentation and `.gitignore`.
+The selected folder already existed with no project files and an empty commit `013b33a` (2026-09-20). Its history was preserved; `git init` safely reinitialized it. No remote is configured. The initial setup commit `986ed4a` added only documentation and `.gitignore`; Milestone 1 is the subsequent implementation.
 
 Matt Pocock's skills were already installed in `~/.agents/skills`; the local `.skill-lock.json` records `mattpocock/skills` as their source. Codex CLI **0.155.1** app-server `skills/list`, with this repository as `cwd` and `forceReload: true`, returned **enabled: true**, user scope and no discovery errors for `setup-matt-pocock-skills`, `ask-matt`, `domain-modeling`, `tdd`, `code-review` and `triage`. Their instructions were readable. This verifies discovery, not completion of every engineering workflow.
 
 Current [Codex skill documentation](https://learn.chatgpt.com/docs/build-skills) supports user-level `~/.agents/skills` and repository `.agents/skills`. No duplicate, symlink, package installation, global configuration change or broad collection was added. Codex CLI can explicitly invoke `$ask-matt` or `$setup-matt-pocock-skills`; model-initiated invocation is disabled for those two in their existing metadata. Other relevant installed choices include domain modeling, TDD and review; none was used to start implementation.
 
-The installed setup skill requests an issue-tracker choice, triage-label confirmation, a draft review, and a choice of AGENTS.md/CLAUDE.md if neither exists. Its tracker question is pending. Recommended next configuration: local Markdown issues, default labels, single-context domain docs and AGENTS.md for Codex. No workflow files were written or choices silently approved. Product documentation does not depend on this pending setup.
+The user selected local Markdown tracking in the Milestone 1 request. Its minimal convention is recorded in `docs/agents/issue-tracker.md`; no external tracker is configured. The broader setup skill's triage and domain-doc scaffolding is unnecessary for this bounded milestone and has not been created. Existing global skills remain available; no additional installation was needed.

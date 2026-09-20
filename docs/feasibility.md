@@ -2,6 +2,8 @@
 
 Research date: **2026-09-20**. Sources below are current public primary documentation, not authenticated API results or signed licenses. Prices are listed currencies before any applicable taxes; recheck at purchase. **Documented** means a provider states it; **judgment** means our recommendation; **unverified** means a remaining gate. No keys obtained, paid subscriptions started, publisher contacted, or scraping performed.
 
+Milestone 1 subsequently authorizes only a local football-data.org Arsenal PL/CL pipeline. Its tests use synthetic responses; account coverage, real latency and public distribution rights remain unverified. No other candidate below is integrated. The [local milestone record](../.scratch/milestone-1/spec.md) tracks implementation evidence separately from this research.
+
 ## Verdict
 
 The product is technically plausible, but the complete three-sport V1 is **not yet cleared for public release**. Structured schedules/results have realistic APIs. The hardest gaps are affordable permitted golf data, NFL practice-change fidelity, Arsenal's complete competition coverage, and substantive news/quotes that may legally be processed and displayed. The product can exclude X, but official video links alone do not fulfill the meaningful-news requirement.

@@ -1,0 +1,51 @@
+{
+  "filters": {"dateFrom": "2026-09-01", "dateTo": "2026-10-01"},
+  "resultSet": {"count": 3, "competitions": "PL,CL", "first": "2026-09-13", "last": "2026-09-28"},
+  "matches": [
+    {
+      "area": {"id": 2072, "name": "England", "code": "ENG"},
+      "competition": {"id": 2021, "name": "Premier League", "code": "PL", "type": "LEAGUE", "emblem": "https://example.test/pl.png"},
+      "season": {"id": 2403, "startDate": "2026-08-01", "endDate": "2027-05-31", "currentMatchday": 5, "winner": null},
+      "id": 5001,
+      "utcDate": "2026-09-13T15:30:00Z",
+      "status": "FINISHED",
+      "matchday": 4,
+      "stage": "REGULAR_SEASON",
+      "group": null,
+      "lastUpdated": "2026-09-13T17:40:00Z",
+      "homeTeam": {"id": 57, "name": "Arsenal FC", "shortName": "Arsenal", "tla": "ARS", "crest": "https://example.test/arsenal.png"},
+      "awayTeam": {"id": 351, "name": "Nottingham Forest FC", "shortName": "Nottingham", "tla": "NOT", "crest": "https://example.test/forest.png"},
+      "score": {"winner": "HOME_TEAM", "duration": "REGULAR", "fullTime": {"home": 3, "away": 0}, "halfTime": {"home": 1, "away": 0}}
+    },
+    {
+      "area": {"id": 2088, "name": "Europe", "code": "EUR"},
+      "competition": {"id": 2001, "name": "UEFA Champions League", "code": "CL", "type": "CUP", "emblem": "https://example.test/cl.png"},
+      "season": {"id": 2404, "startDate": "2026-09-01", "endDate": "2027-05-31", "currentMatchday": 1, "winner": null},
+      "id": 5002,
+      "utcDate": "2026-09-23T19:00:00Z",
+      "status": "TIMED",
+      "matchday": 1,
+      "stage": "LEAGUE_STAGE",
+      "group": null,
+      "lastUpdated": "2026-09-19T10:00:00Z",
+      "homeTeam": {"id": 5, "name": "FC Bayern Muenchen", "shortName": "Bayern", "tla": "FCB", "crest": "https://example.test/bayern.png"},
+      "awayTeam": {"id": 57, "name": "Arsenal FC", "shortName": "Arsenal", "tla": "ARS", "crest": "https://example.test/arsenal.png"},
+      "score": {"winner": null, "duration": "REGULAR", "fullTime": {"home": null, "away": null}, "halfTime": {"home": null, "away": null}}
+    },
+    {
+      "area": {"id": 2072, "name": "England", "code": "ENG"},
+      "competition": {"id": 9999, "name": "FA Cup", "code": "FAC", "type": "CUP", "emblem": null},
+      "season": {"id": 2405, "startDate": "2026-08-01", "endDate": "2027-05-31", "currentMatchday": null, "winner": null},
+      "id": 5999,
+      "utcDate": "2026-09-28T14:00:00Z",
+      "status": "SCHEDULED",
+      "matchday": null,
+      "stage": "THIRD_ROUND",
+      "group": null,
+      "lastUpdated": "2026-09-19T10:00:00Z",
+      "homeTeam": {"id": 57, "name": "Arsenal FC", "shortName": "Arsenal", "tla": "ARS", "crest": "https://example.test/arsenal.png"},
+      "awayTeam": {"id": 88, "name": "Example FC", "shortName": "Example", "tla": "EXA", "crest": null},
+      "score": {"winner": null, "duration": "REGULAR", "fullTime": {"home": null, "away": null}, "halfTime": {"home": null, "away": null}}
+    }
+  ]
+}
