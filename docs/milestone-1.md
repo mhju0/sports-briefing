@@ -4,7 +4,7 @@ This milestone is a local Python/SQLite CLI, not the full product. It supports *
 
 ## Setup and commands
 
-Use Python 3.11 or newer from the repository root. Runtime and tests use the Python standard library; no service, package installation or live API is needed for tests.
+Use Python 3.11 or newer from the repository root. M1 runtime and its tests use the Python standard library; no service or live API is needed for those tests. The complete suite now includes M2 HTTP tests, which require the dependencies in [M2 setup](milestone-2.md).
 
 Get a football-data.org credential for your own account/application. Export it as `FOOTBALL_DATA_API_KEY`; `.env.example` documents configuration, but the application does not automatically load `.env`. For an interactive bash/zsh shell, enter the key without echoing it or putting its value in shell history:
 

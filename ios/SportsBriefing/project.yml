@@ -1,0 +1,50 @@
+name: SportsBriefing
+options:
+  deploymentTarget:
+    iOS: "18.0"
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_APPROACHABLE_CONCURRENCY: YES
+    SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+    TARGETED_DEVICE_FAMILY: "1"
+targets:
+  SportsBriefing:
+    type: application
+    platform: iOS
+    sources:
+      - SportsBriefing
+    info:
+      path: SportsBriefing/Info.plist
+      properties:
+        CFBundleDisplayName: Sports Briefing
+        UILaunchScreen: {}
+        NSAppTransportSecurity:
+          NSExceptionDomains:
+            localhost:
+              NSExceptionAllowsInsecureHTTPLoads: true
+              NSIncludesSubdomains: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.michaelju.sportsbriefing
+  SportsBriefingTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - SportsBriefingTests
+    dependencies:
+      - target: SportsBriefing
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.michaelju.sportsbriefing.tests
+schemes:
+  SportsBriefing:
+    build:
+      targets:
+        SportsBriefing: all
+        SportsBriefingTests: [test]
+    test:
+      targets:
+        - SportsBriefingTests

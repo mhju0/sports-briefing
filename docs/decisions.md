@@ -1,6 +1,6 @@
 # Decisions and architecture proposal
 
-Recorded 2026-09-20. Product decisions in [product-spec.md](product-spec.md) are accepted inputs. The user subsequently authorized Milestone 1: Python/SQLite Arsenal fixture ingestion and a deterministic CLI briefing, limited to PL/CL. The broader architecture below remains a proposal; it is not authorization for a server, client or infrastructure. Milestone scope/evidence is tracked [locally](../.scratch/milestone-1/spec.md).
+Recorded 2026-09-20. Product decisions in [product-spec.md](product-spec.md) are accepted inputs. The user subsequently authorized Milestone 1: Python/SQLite Arsenal fixture ingestion and a deterministic CLI briefing, limited to PL/CL. Milestone 2 subsequently authorizes only a local FastAPI read layer and minimal SwiftUI iPhone client on that same Arsenal pipeline. The broader architecture below remains a proposal, including scheduling, deployment and additional sports. Scope/evidence is tracked locally for [M1](../.scratch/milestone-1/spec.md) and [M2](../.scratch/milestone-2/spec.md).
 
 ## Decision register
 

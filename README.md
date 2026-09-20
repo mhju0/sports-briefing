@@ -6,7 +6,7 @@ Meaningful, source-backed changes take priority over volume. A followed entity c
 
 ## Status
 
-Milestone 1 implements a local **Python/SQLite Arsenal fixture/result pipeline** and deterministic CLI briefing. Only Premier League and UEFA Champions League are supported. FA Cup, EFL Cup, other competitions, injuries, news and reporter material are unsupported. The iPhone application and broader architecture remain unimplemented.
+Milestone 1 is complete and live-verified: a **Python/SQLite Arsenal fixture/result pipeline** and deterministic CLI briefing. Milestone 2 adds a local FastAPI read endpoint and a minimal SwiftUI iPhone screen; see its [setup and verification](docs/milestone-2.md). Only Premier League and UEFA Champions League are supported. FA Cup, EFL Cup, other competitions, injuries, news and reporter material remain unsupported.
 
 ## Run Milestone 1
 
@@ -19,7 +19,7 @@ python3 -m sports_briefing briefing arsenal --hide-results
 python3 -m unittest discover -s tests -v
 ```
 
-Tests run offline with synthetic provider responses and real temporary SQLite files. `inspect` exposes raw stored results for debugging; use `briefing --hide-results` for spoiler-safe output. No Python dependencies need installing.
+M1 ingestion/CLI use only the Python standard library. For the complete test suite and M2 server, install the dependencies in the [M2 setup](docs/milestone-2.md). Tests run offline with synthetic responses and temporary SQLite files. `inspect` exposes stored results for debugging; use `briefing --hide-results` for spoiler-safe output.
 
 ## Read next
 
@@ -27,7 +27,8 @@ Tests run offline with synthetic provider responses and real temporary SQLite fi
 - [Feasibility](docs/feasibility.md): dated source research, licensing and coverage gaps
 - [Decisions and proposed architecture](docs/decisions.md): trade-offs, domain boundaries, first milestone
 - [Milestone 1 setup](docs/milestone-1.md): commands, schema, failure behavior and verification
+- [Milestone 2 setup](docs/milestone-2.md): local API, iPhone client, contract and limitations
 
 This is a separate repository from FullCourt. No FullCourt code is copied.
 
-Matt Pocock's existing user-level skills are available; no new skills were installed. Milestone tracking uses [local Markdown](.scratch/milestone-1/spec.md), with the convention in [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md). No external tracker is configured.
+Matt Pocock's existing user-level skills are available; no new skills were installed. Milestone tracking uses [local Markdown](.scratch/milestone-2/spec.md), with the convention in [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md). No external tracker is configured.
