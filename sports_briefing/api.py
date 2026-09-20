@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from .briefing import BriefingError, build_arsenal_briefing
 from .cli import DEFAULT_DATABASE
 from .storage import StorageError
+from .nfl.briefing import build_texans_briefing
 
 
 LOGGER = logging.getLogger("sports_briefing.api")
@@ -81,6 +82,73 @@ class ArsenalBriefingResponse(BaseModel):
     source: SourceResponse
 
 
+class TexansGameResponse(BaseModel):
+    provider_game_id: str
+    season_year: int
+    season_type: str
+    week: int
+    scheduled_utc: str
+    status: str
+    home_team: str
+    away_team: str
+    provider_generated_at: str
+
+
+class TexansAvailabilityResponse(BaseModel):
+    player_id: str
+    player_name: str
+    position: str | None
+    practice_status: str | None
+    game_status: str | None
+    injury: str | None
+    status_date: str | None
+    provider_generated_at: str
+
+
+class TexansChangeResponse(BaseModel):
+    player_id: str
+    player_name: str
+    change_type: str
+    old_value: str | None
+    new_value: str | None
+    provider_generated_at: str
+    report_date: str | None
+
+
+class AvailabilityScopeResponse(BaseModel):
+    season: int
+    type: str
+    week: int
+
+
+class AvailabilityReportResponse(BaseModel):
+    available: bool
+    scope: AvailabilityScopeResponse | None
+    provider_generated_at: str | None
+    report_date: str | None
+
+
+class TexansSourceResponse(BaseModel):
+    provider: str
+    attribution: str
+    checked_at: str
+    schedule_generated_at: str
+    injuries_generated_at: str | None
+
+
+class TexansBriefingResponse(BaseModel):
+    entity: EntityResponse
+    headline: str
+    summary: str
+    reason_shown: str
+    as_of: str
+    next_game: TexansGameResponse | None
+    availability_report: AvailabilityReportResponse
+    availability: list[TexansAvailabilityResponse]
+    changes: list[TexansChangeResponse]
+    source: TexansSourceResponse
+
+
 def create_app(database: Path = DEFAULT_DATABASE) -> FastAPI:
     app = FastAPI(title="Sports Briefing", version="0.2.0")
 
@@ -122,6 +190,41 @@ def create_app(database: Path = DEFAULT_DATABASE) -> FastAPI:
             raise HTTPException(
                 status_code=503,
                 detail="Arsenal briefing could not be read.",
+            ) from exc
+
+    @app.get("/briefings/texans", response_model=TexansBriefingResponse)
+    def texans_briefing() -> TexansBriefingResponse:
+        try:
+            return _project_texans_briefing(build_texans_briefing(database))
+        except StorageError as exc:
+            if _is_missing_texans_state(exc):
+                LOGGER.info("briefing_unavailable entity=texans")
+                raise HTTPException(
+                    status_code=404,
+                    detail="Texans briefing is not available. Run ingestion first.",
+                ) from exc
+            LOGGER.exception("briefing_read_failed entity=texans stage=persistence")
+            raise HTTPException(
+                status_code=503,
+                detail="Texans briefing could not be read.",
+            ) from exc
+        except (sqlite3.Error, OSError) as exc:
+            if _is_missing_texans_state(exc):
+                LOGGER.info("briefing_unavailable entity=texans")
+                raise HTTPException(
+                    status_code=404,
+                    detail="Texans briefing is not available. Run ingestion first.",
+                ) from exc
+            LOGGER.exception("briefing_read_failed entity=texans stage=persistence")
+            raise HTTPException(
+                status_code=503,
+                detail="Texans briefing could not be read.",
+            ) from exc
+        except (BriefingError, ValueError, TypeError, KeyError) as exc:
+            LOGGER.exception("briefing_read_failed entity=texans stage=projection")
+            raise HTTPException(
+                status_code=503,
+                detail="Texans briefing could not be read.",
             ) from exc
 
     return app
@@ -221,10 +324,79 @@ def _mapping(value: object, label: str) -> dict[str, object]:
     return value
 
 
+def _project_texans_briefing(briefing: dict[str, object]) -> TexansBriefingResponse:
+    next_value = briefing.get("next_game")
+    next_game = TexansGameResponse(**_mapping(next_value, "next game")) if next_value else None
+    report = AvailabilityReportResponse(
+        **_mapping(briefing["availability_report"], "availability report")
+    )
+    availability = [
+        TexansAvailabilityResponse(**_mapping(value, "availability"))
+        for value in _sequence(briefing["availability"], "availability")
+    ]
+    changes = [
+        TexansChangeResponse(**_mapping(value, "change"))
+        for value in _sequence(briefing["changes"], "changes")
+    ]
+    if next_game is None:
+        headline = "No upcoming Texans game in saved schedule"
+        summary = "No current availability report is attached to an upcoming game."
+        reason = "No upcoming game in persisted schedule"
+    else:
+        headline = f"{next_game.home_team} vs {next_game.away_team}"
+        if not report.available:
+            summary = "Next game found; its injury report has not been ingested."
+            reason = "Next game with report unavailable"
+        elif changes:
+            summary = f"{len(changes)} meaningful availability change(s) in the saved report."
+            reason = "Recent practice or game-status change"
+        else:
+            summary = f"{len(availability)} player(s) in the current saved injury report."
+            reason = "Current report for next game"
+    source = _mapping(briefing["source"], "source")
+    return TexansBriefingResponse(
+        entity=EntityResponse(id="texans", name=str(briefing["entity"])),
+        headline=headline,
+        summary=summary,
+        reason_shown=reason,
+        as_of=str(briefing["as_of"]),
+        next_game=next_game,
+        availability_report=report,
+        availability=availability,
+        changes=changes,
+        source=TexansSourceResponse(
+            provider=str(source["provider"]),
+            attribution=str(source["attribution"]),
+            checked_at=str(source["fetched_at"]),
+            schedule_generated_at=str(source["schedule_generated_at"]),
+            injuries_generated_at=(
+                str(source["injuries_generated_at"])
+                if source["injuries_generated_at"] is not None
+                else None
+            ),
+        ),
+    )
+
+
+def _sequence(value: object, label: str) -> list[object]:
+    if not isinstance(value, list):
+        raise BriefingError(f"{label} must be an array")
+    return value
+
+
 def _is_missing_state(error: StorageError) -> bool:
     message = str(error)
     return message.startswith("database does not exist:") or message == (
         "database contains no successful Arsenal ingestion"
+    )
+
+
+def _is_missing_texans_state(error: Exception) -> bool:
+    message = str(error)
+    return (
+        message.startswith("database does not exist:")
+        or message == "database contains no successful Texans ingestion"
+        or message == "no such table: nfl_fetches"
     )
 
 

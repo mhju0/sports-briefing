@@ -6,7 +6,9 @@ Meaningful, source-backed changes take priority over volume. A followed entity c
 
 ## Status
 
-Milestone 1 is complete and live-verified: a **Python/SQLite Arsenal fixture/result pipeline** and deterministic CLI briefing. Milestone 2 adds a local FastAPI read endpoint and a minimal SwiftUI iPhone screen; see its [setup and verification](docs/milestone-2.md). Only Premier League and UEFA Champions League are supported. FA Cup, EFL Cup, other competitions, injuries, news and reporter material remain unsupported.
+Milestone 1 is complete and live-verified: a **Python/SQLite Arsenal fixture/result pipeline** and deterministic CLI briefing. Milestone 2 adds a local FastAPI read endpoint and a minimal SwiftUI iPhone screen; see its [setup and verification](docs/milestone-2.md). Arsenal coverage supports only Premier League and UEFA Champions League. FA Cup, EFL Cup, other Arsenal competitions, Arsenal injuries, news and reporter material remain unsupported.
+
+Milestone 3 adds a separate Texans schedule and practice/status-change pipeline. Its Sportradar integration is provisional and **awaiting authenticated provider verification**; see [M3 setup and limitations](docs/milestone-3.md). The iPhone app remains Arsenal-only.
 
 ## Run Milestone 1
 
@@ -28,7 +30,8 @@ M1 ingestion/CLI use only the Python standard library. For the complete test sui
 - [Decisions and proposed architecture](docs/decisions.md): trade-offs, domain boundaries, first milestone
 - [Milestone 1 setup](docs/milestone-1.md): commands, schema, failure behavior and verification
 - [Milestone 2 setup](docs/milestone-2.md): local API, iPhone client, contract and limitations
+- [Milestone 3 setup](docs/milestone-3.md): Texans ingestion, change history and provider-verification gate
 
 This is a separate repository from FullCourt. No FullCourt code is copied.
 
-Matt Pocock's existing user-level skills are available; no new skills were installed. Milestone tracking uses [local Markdown](.scratch/milestone-2/spec.md), with the convention in [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md). No external tracker is configured.
+Matt Pocock's existing user-level skills are available; no new skills were installed. Milestone tracking uses [local Markdown](.scratch/milestone-3/spec.md), with the convention in [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md). No external tracker is configured.

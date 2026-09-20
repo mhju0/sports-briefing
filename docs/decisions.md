@@ -1,6 +1,6 @@
 # Decisions and architecture proposal
 
-Recorded 2026-09-20. Product decisions in [product-spec.md](product-spec.md) are accepted inputs. The user subsequently authorized Milestone 1: Python/SQLite Arsenal fixture ingestion and a deterministic CLI briefing, limited to PL/CL. Milestone 2 subsequently authorizes only a local FastAPI read layer and minimal SwiftUI iPhone client on that same Arsenal pipeline. The broader architecture below remains a proposal, including scheduling, deployment and additional sports. Scope/evidence is tracked locally for [M1](../.scratch/milestone-1/spec.md) and [M2](../.scratch/milestone-2/spec.md).
+Recorded 2026-09-20. Product decisions in [product-spec.md](product-spec.md) are accepted inputs. The user subsequently authorized Milestone 1: Python/SQLite Arsenal fixture ingestion and a deterministic CLI briefing, limited to PL/CL. Milestone 2 subsequently authorizes only a local FastAPI read layer and minimal SwiftUI iPhone client on that same Arsenal pipeline. Milestone 3 authorizes a separate Texans schedule/practice-change slice, with a provisional Sportradar adapter and authenticated verification still pending; see [M3](milestone-3.md). The broader architecture below remains a proposal, including scheduling, deployment and additional sports beyond that bounded scope. Scope/evidence is tracked locally for [M1](../.scratch/milestone-1/spec.md) and [M2](../.scratch/milestone-2/spec.md).
 
 ## Decision register
 
@@ -113,7 +113,7 @@ Deliver CLI commands to fetch a bounded Arsenal schedule/result window, validate
 
 Review examples before tests: upcoming → live → finished; unchanged rerun; postponement/correction; partial/malformed response; 429/timeout; restart and readback; spoiler-hidden output. Live transitions can be simulated to test rules, but only an entitled real endpoint can prove live freshness. Explain the data flow and inspect the diff together before broadening.
 
-Subsequent bounded gates: prove Texans practice/designation changes and Scheffler entry/result coverage; add topic selection and a small manually reviewed evaluation set; compare LLM prose with templates; then add FastAPI/SwiftUI and operational deployment. Do not build UI around unproven source fields.
+Current bounded gate: prove Texans practice/designation changes in M3. Subsequent gates: Scheffler entry/result coverage; add topic selection and a small manually reviewed evaluation set; compare LLM prose with templates; then add FastAPI/SwiftUI and operational deployment. Do not build UI around unproven source fields.
 
 ## Assumptions and open decisions
 

@@ -1,0 +1,38 @@
+{
+  "season": {
+    "id": "season-2026-reg",
+    "year": 2026,
+    "type": "REG",
+    "name": "REG"
+  },
+  "week": {
+    "id": "week-3",
+    "sequence": 3,
+    "title": "3"
+  },
+  "teams": [
+    {
+      "id": "82d2d380-3834-4938-835f-aec541e5ece7",
+      "name": "Texans",
+      "market": "Houston",
+      "alias": "HOU",
+      "players": [
+        {
+          "id": "player-collins",
+          "name": "Nico Collins",
+          "jersey": "12",
+          "position": "WR",
+          "sr_id": "sr:player:collins",
+          "injuries": [
+            {
+              "status": "Out",
+              "status_date": "2026-09-26T00:00:00+00:00",
+              "practice": {"status": "Did Not Participate In Practice"},
+              "primary": "Hamstring"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "id": "season-2026-reg",
+  "year": 2026,
+  "type": "REG",
+  "name": "REG",
+  "weeks": [
+    {
+      "id": "week-3",
+      "sequence": 3,
+      "title": "3",
+      "games": [
+        {
+          "id": "game-texans-jaguars",
+          "status": "scheduled",
+          "scheduled": "2026-09-27T17:00:00+00:00",
+          "home": {
+            "id": "82d2d380-3834-4938-835f-aec541e5ece7",
+            "name": "Texans",
+            "market": "Houston",
+            "alias": "HOU"
+          },
+          "away": {
+            "id": "jaguars-team-id",
+            "name": "Jaguars",
+            "market": "Jacksonville",
+            "alias": "JAX"
+          }
+        }
+      ]
+    },
+    {
+      "id": "week-4",
+      "sequence": 4,
+      "title": "4",
+      "games": [
+        {
+          "id": "game-titans-texans",
+          "status": "scheduled",
+          "scheduled": "2026-10-04T17:00:00Z",
+          "home": {
+            "id": "titans-team-id",
+            "name": "Titans",
+            "market": "Tennessee",
+            "alias": "TEN"
+          },
+          "away": {
+            "id": "82d2d380-3834-4938-835f-aec541e5ece7",
+            "name": "Texans",
+            "market": "Houston",
+            "alias": "HOU"
+          }
+        }
+      ]
+    }
+  ]
+}
