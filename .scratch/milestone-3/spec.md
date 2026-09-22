@@ -59,3 +59,9 @@ Implementation complete — awaiting authenticated provider verification.
 - Read-only week 2 diagnostic: HTTP 200; raw `x-generated-date: [redacted]`; [redacted] teams and [redacted] Texans players. Each Texans player had exactly one injury object with the expected status/status-date/practice/primary structure, and the current normalizer accepted all [redacted].
 - No NFL games, availability, changes, or source revisions were persisted because schedule and current-week availability commit atomically. Final inspect therefore reports empty domain state and the latest controlled normalization failure; briefing reports no successful Texans ingestion.
 - Stale-revision semantics required no change. Live persisted idempotency could not be tested without a populated current-week response. M3 remains `in-progress`.
+
+### 2026-09-23 KST current-week recheck
+
+- One authenticated week 3 injury read returned HTTP 200 with `teams: []` again. Raw `x-generated-date` remained `[redacted]`; the response `Date` was `[redacted]` (September 23 KST).
+- Earlier stored schedule revisions `[redacted]` and later raw/normalized `[redacted]` values came from separate requests. The older raw header was not retained, so only its normalized database value is known.
+- No new ingest was run because the current-week Texans report remained absent. NFL domain and revision row counts remain zero; M3 is still awaiting a populated current-week response and live persisted idempotency verification.

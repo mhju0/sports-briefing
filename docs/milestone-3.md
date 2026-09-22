@@ -144,6 +144,8 @@ The first entitled current-season schedule request succeeded, but normalization 
 
 The saved fetch diagnostic records `schedule_generated_at=[redacted]`. This is the adapter's normalized value from `x-generated-date`; the original response headers were not retained, so this first capture does not establish the raw header spelling or any `Last-Modified` behavior. The saved body is also intentionally truncated at 256 KiB, so only the parsed prefix is treated as live evidence.
 
+That `[redacted]` value belongs to the earlier requests recorded at 12:36 UTC. The later post-fix requests at 14:05–14:06 UTC returned raw `x-generated-date: [redacted]`. They are separate provider responses, not two timezone representations of one header. Because the earlier raw header was not retained, its exact original text cannot be reconstructed from the normalized database value.
+
 ### Post-fix authenticated validation (2026-09-22)
 
 Two post-fix current-season schedule requests returned HTTP 200 and the complete top-level shape `season`, `weeks`, `_comment`. The season object was `{id, year, type, name}` for 2026 `REG`; [redacted] week objects contained Texans games keyed by stable game IDs. Both responses carried raw `x-generated-date: [redacted]`, normalized to `[redacted]`. `Last-Modified` was a different later file-build timestamp, which supports keeping the existing revision clock unchanged.
@@ -151,3 +153,9 @@ Two post-fix current-season schedule requests returned HTTP 200 and the complete
 The first week 3 injury request received HTTP 429. After a controlled cooldown, the same endpoint returned HTTP 200 with raw `x-generated-date: [redacted]`, normalized to `[redacted]`, and `teams: []`. The old generation date and empty team list are provider output, not evidence of an empty/healthy Texans report. Normalization therefore continued to fail clearly and the all-or-nothing transaction persisted no NFL domain rows.
 
 A read-only week 2 request was used only to verify the actual populated injury shape. It returned HTTP 200 with raw `x-generated-date: [redacted]`, normalized to `[redacted]`. The current normalizer accepted all [redacted] Texans records without modification. This diagnostic was not substituted for week 3 and was not persisted. Because there is still no successful current-week batch, live persisted idempotency and a saved Texans briefing cannot yet be verified; M3 remains in progress.
+
+### Current-week availability recheck (2026-09-23 KST)
+
+A single authenticated read of the same week 3 injury endpoint again returned HTTP 200 and `teams: []`. Its raw `x-generated-date` remained `[redacted]` (normalized `[redacted]`); `Last-Modified` remained `[redacted]`. The response was served at `[redacted]`, which was September 23 locally in Korea. This confirms continued upstream unavailability for the requested scope at check time, but does not distinguish report publication timing, account entitlement, or another provider condition.
+
+No ingestion was attempted after this read because the required current-week Texans report was still absent. NFL games, current availability, changes, and source revisions therefore remain at zero. The latest saved attempt and briefing behavior are unchanged, and live persisted idempotency remains blocked on a populated current-week response.
