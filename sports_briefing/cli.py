@@ -26,6 +26,7 @@ from .storage import (
     record_failed_fetch,
 )
 from .nfl.briefing import build_texans_briefing
+from .timeline import TimelineError, build_home_timeline
 from .nfl.game_policy import is_upcoming_game_status
 from .nfl.sportradar import (
     NormalizationError as NFLNormalizationError,
@@ -69,6 +70,17 @@ def main(argv: Sequence[str] | None = None) -> int:
                 args.entity,
                 result["as_of"],
             )
+        elif args.command == "timeline":
+            result = build_home_timeline(
+                args.db,
+                as_of=args.as_of,
+                hide_results=not args.show_results,
+            )
+            LOGGER.info(
+                "timeline_generated as_of=%s items=%s",
+                result["as_of"],
+                len(result["items"]),
+            )
         else:
             result = inspect_state(args.db) if args.entity == "arsenal" else inspect_texans_state(args.db)
     except (
@@ -78,7 +90,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         NFLNormalizationError,
         StorageError,
         BriefingError,
+        TimelineError,
         ValueError,
+        AttributeError,
         sqlite3.Error,
         OSError,
     ) as exc:
@@ -365,6 +379,17 @@ def _parser() -> argparse.ArgumentParser:
     inspect = subparsers.add_parser("inspect", help="inspect normalized persisted state")
     inspect.add_argument("entity", choices=("arsenal", "texans"))
     inspect.add_argument("--db", type=Path, default=DEFAULT_DATABASE)
+
+    timeline = subparsers.add_parser(
+        "timeline", help="derive the ranked Arsenal + Texans home timeline"
+    )
+    timeline.add_argument("--db", type=Path, default=DEFAULT_DATABASE)
+    timeline.add_argument(
+        "--as-of", help="timezone-aware ISO-8601 evaluation time; current UTC by default"
+    )
+    timeline.add_argument(
+        "--show-results", action="store_true", help="include supported Arsenal result fields"
+    )
     return parser
 
 
@@ -452,6 +477,8 @@ def _stage(exc: Exception) -> str:
         return "persistence"
     if isinstance(exc, BriefingError):
         return "briefing"
+    if isinstance(exc, TimelineError):
+        return "timeline"
     if isinstance(exc, (sqlite3.Error, OSError)):
         return "persistence"
     return "configuration"

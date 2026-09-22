@@ -225,6 +225,7 @@ def inspect_state(path: Path) -> dict[str, Any]:
 def load_briefing_state(path: Path, as_of: str | None) -> tuple[list[dict[str, Any]], str, dict[str, Any]]:
     with closing(_read_only(path)) as connection:
         connection.row_factory = sqlite3.Row
+        connection.execute("BEGIN")
         latest = connection.execute(
             "SELECT * FROM provider_fetches WHERE outcome = 'success' ORDER BY id DESC LIMIT 1"
         ).fetchone()

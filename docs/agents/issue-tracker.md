@@ -5,5 +5,5 @@ The user selected local Markdown on 2026-09-20. No external tracker is configure
 Milestone scope and completion evidence live in `.scratch/<milestone>/spec.md`.
 Use a `Status:` field (`in-progress`, `complete`, or `blocked`) and append verification results when available. Split into individual tickets only if a later milestone needs that structure. This milestone does not use automatic triage.
 
-Current implementation scope: [Milestone 3](../../.scratch/milestone-3/spec.md). [Milestone 1](../../.scratch/milestone-1/spec.md) and [Milestone 2](../../.scratch/milestone-2/spec.md) are complete; M3 requires a separate NFL provider verification gate.
+Current implementation records: [Milestone 4](../../.scratch/milestone-4/spec.md) is complete as an offline read-only ranking layer. [Milestone 3](../../.scratch/milestone-3/spec.md) remains in progress behind its separate authenticated NFL provider verification gate. [Milestone 1](../../.scratch/milestone-1/spec.md) and [Milestone 2](../../.scratch/milestone-2/spec.md) are complete.
 Product behavior remains in `docs/product-spec.md`; proposed future architecture in `docs/decisions.md` is not authorization to build it.

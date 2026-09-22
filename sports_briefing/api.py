@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
 import sqlite3
 
@@ -11,6 +12,7 @@ from .briefing import BriefingError, build_arsenal_briefing
 from .cli import DEFAULT_DATABASE
 from .storage import StorageError
 from .nfl.briefing import build_texans_briefing
+from .timeline import TimelineError, build_home_timeline
 
 
 LOGGER = logging.getLogger("sports_briefing.api")
@@ -149,6 +151,39 @@ class TexansBriefingResponse(BaseModel):
     source: TexansSourceResponse
 
 
+class TimelineSourceResponse(BaseModel):
+    provider: str
+    attribution: str
+    generated_at: str
+    observed_at: str
+    record_id: str
+
+
+class TimelineItemResponse(BaseModel):
+    id: str
+    entity: EntityResponse
+    sport: str
+    type: str
+    state: str
+    tier: str
+    reason: str
+    title: str
+    summary: str
+    event_time: str | None
+    change_time: str | None
+    competition: CompetitionResponse | None
+    source: TimelineSourceResponse
+    result_hidden: bool | None = None
+    result: ResultResponse | None = None
+
+
+class TimelineResponse(BaseModel):
+    as_of: str
+    spoiler_mode: str
+    items: list[TimelineItemResponse]
+    unavailable_entities: list[str]
+
+
 def create_app(database: Path = DEFAULT_DATABASE) -> FastAPI:
     app = FastAPI(title="Sports Briefing", version="0.2.0")
 
@@ -226,6 +261,31 @@ def create_app(database: Path = DEFAULT_DATABASE) -> FastAPI:
                 status_code=503,
                 detail="Texans briefing could not be read.",
             ) from exc
+
+    @app.get(
+        "/timeline",
+        response_model=TimelineResponse,
+        response_model_exclude_none=True,
+    )
+    def home_timeline(
+        hide_results: bool = Query(default=True),
+        as_of: datetime | None = Query(default=None),
+    ) -> TimelineResponse:
+        normalized_as_of = None
+        if as_of is not None:
+            if as_of.tzinfo is None:
+                raise HTTPException(status_code=422, detail="Timeline as_of must include a timezone.")
+            normalized_as_of = as_of.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+        try:
+            return TimelineResponse.model_validate(
+                build_home_timeline(database, as_of=normalized_as_of, hide_results=hide_results)
+            )
+        except (sqlite3.Error, OSError, StorageError) as exc:
+            LOGGER.exception("timeline_read_failed stage=persistence")
+            raise HTTPException(status_code=503, detail="Home timeline could not be read.") from exc
+        except (TimelineError, BriefingError, ValueError, TypeError, KeyError, AttributeError) as exc:
+            LOGGER.exception("timeline_read_failed stage=projection")
+            raise HTTPException(status_code=503, detail="Home timeline could not be read.") from exc
 
     return app
 
