@@ -1,6 +1,6 @@
 # Milestone 3: Texans availability ingestion
 
-Implementation and offline verification are complete. One authenticated schedule response exposed and confirmed a normalization mismatch; post-fix schedule and injury verification are pending because the credential was not available to this execution environment. Scope is Houston Texans schedule, injury description, practice participation and game designation. The iPhone app is unchanged.
+Implementation and offline verification are complete. The post-fix authenticated schedule path now normalizes successfully. The next-game weekly injury endpoint is reachable but returned no teams, so the atomic batch correctly remained unpersisted. Scope is Houston Texans schedule, injury description, practice participation and game designation. The iPhone app is unchanged.
 
 ## Provider decision — checked 2026-09-20
 
@@ -8,7 +8,7 @@ Implementation and offline verification are complete. One authenticated schedule
 | --- | --- | --- |
 | API-NFL / API-Sports | Current injury records provide identity/date/status/description; the official guide says injury history is not retained. Practice participation is not documented. Free access is 100 requests/day; Pro is listed at $15/month. | Cheapest candidate, but not enough evidence for Full/Limited/DNP. No key was available for an authenticated trial; do not substitute generic injury text for practice status. |
 | SportsDataIO | NFL injury schema includes PlayerID, InjuryID, BodyPart, Status and Updated. Current OpenAPI marks Practice and PracticeDescription deprecated; schedule data has ScoreID/GameKey and DateTimeUTC. Trial data can be scrambled; product entitlements differ. | Defer until entitled real payloads demonstrate reliable practice fields. A documented injury-status feed alone does not satisfy M3. |
-| Sportradar NFL v7 | Weekly Injuries explicitly separates player GUID, primary injury text, practice.status, injury.status and status_date. Official examples show DNP, Full and missing game designation. Season Schedule supplies game/team IDs and week identity. | Provisional single integration. The authenticated schedule shape is partially verified; weekly injury behavior remains unverified. |
+| Sportradar NFL v7 | Weekly Injuries explicitly separates player GUID, primary injury text, practice.status, injury.status and status_date. Official examples show DNP, Full and missing game designation. Season Schedule supplies game/team IDs and week identity. | Provisional single integration. Authenticated schedule and prior-week injury payload shapes now match the adapter; next-week publication timing remains an open operational boundary. |
 
 Sources: [API-NFL guide](https://www.api-football.com/news/post/how-to-get-started-with-api-nfl-the-complete-beginners-guide), [API-NFL pricing](https://api-sports.io/sports/nfl), [SportsDataIO workflow](https://sportsdata.io/developers/workflow-guide/nfl), [SportsDataIO OpenAPI](https://cdn.sportsdata.io/openapi/NFL-openapi-3.1.json), [Sportradar weekly injuries](https://developer.sportradar.com/football/reference/nfl-weekly-injuries), [official injury examples](https://developer.sportradar.com/football/docs/nfl-ig-rosters), [schedule guide](https://developer.sportradar.com/football/docs/nfl-ig-schedules).
 
@@ -24,7 +24,9 @@ The [header documentation](https://developer.sportradar.com/getting-started/docs
 
 **Architectural judgment:** use the upstream generation timestamp to order snapshots, with report-date regression checks. Do not silently substitute local fetch time. Persist local before/after changes because a historical weekly endpoint does not establish access to every prior daily practice state.
 
-**Unverified:** post-fix schedule acceptance, weekly Texans injury payloads, raw header presence/ordering, status spelling variations, multiple injury entries, missing/empty team semantics, live nulls, latency and error/quota responses. Synthetic fixtures exercise the observed schedule shape and documented injury contract; they do not close these gaps.
+**Authenticated evidence from 2026-09-22:** the current-season schedule returned HTTP 200 with top-level `season`, `weeks`, and `_comment`; its raw `x-generated-date` was an RFC 7231 date. The selected week 3 injury endpoint also returned HTTP 200 with top-level `season`, `week`, `teams`, and `_comment`, but `teams` was empty and therefore contained no Texans report. A separate read-only week 2 diagnostic returned all [redacted] teams and [redacted] Texans players; each Texans player had exactly one injury entry with `status`, `status_date`, `practice`, and `primary`. The existing normalizer accepted it and observed `DNP`/`FULL`, `OUT`/null, and non-null injury/status dates.
+
+**Still unverified:** repeated accepted current-week ingestion, live player change transitions, other status spellings, multiple injury entries, current-report publication timing, and commercial retention/display rights. An HTTP 429 was encountered on the first closely spaced injury request; the response body was [redacted]. A later request succeeded, but the error response headers were not captured, so no `Retry-After` claim is made.
 
 ## Boundaries and limitations
 
@@ -134,10 +136,18 @@ The deterministic suite uses synthetic documentation-shaped fixtures; no test co
 
 A separate local smoke check copied the actual Arsenal database into a temporary database, injected synthetic Texans responses at the HTTP transport boundary, reran ingestion, restarted CLI processes and served both entities through actual loopback Uvicorn HTTP requests. The Arsenal briefing was unchanged. This proves local integration, not authenticated NFL provider fidelity.
 
-Post-fix authenticated validation remains pending. Before marking M3 complete, capture entitled Texans schedule/report responses and confirm GUIDs, scope identity, `x-generated-date`, player `status_date`, null/empty semantics, practice spelling, status changes and encountered error/quota behavior. Do not commit the credential or raw licensed payloads without a retention/redistribution review. Final test/review evidence is in the local milestone record.
+Authenticated shape validation is partially complete, but M3 remains pending until the current endpoint returns a populated Texans report and two successful identical ingestions prove persisted idempotency. The empty response could reflect publication timing, entitlement, or another provider condition; this run does not distinguish them. Do not commit the credential or raw licensed payloads without a retention/redistribution review. Final test/review evidence is in the local milestone record.
 
 ### First authenticated schedule finding (2026-09-22)
 
 The first entitled current-season schedule request succeeded, but normalization failed before the injury request. Its bounded diagnostic capture begins with a top-level `season` object followed by `weeks`; season identity is under `season.id`, `season.year` and `season.type`. The original synthetic fixture and normalizer incorrectly expected those fields at the payload root. The normalizer and offline fixtures now use the observed nested shape while leaving game, week, persistence and revision models unchanged.
 
-The saved fetch diagnostic records `schedule_generated_at=[redacted]`. This is the adapter's normalized value from `x-generated-date`; the original response headers were not retained, so this capture does not establish the raw header spelling or any `Last-Modified` behavior. The saved body is also intentionally truncated at 256 KiB, so only the parsed prefix is treated as live evidence. Post-fix schedule, injury and repeated-ingest verification still require an authenticated rerun.
+The saved fetch diagnostic records `schedule_generated_at=[redacted]`. This is the adapter's normalized value from `x-generated-date`; the original response headers were not retained, so this first capture does not establish the raw header spelling or any `Last-Modified` behavior. The saved body is also intentionally truncated at 256 KiB, so only the parsed prefix is treated as live evidence.
+
+### Post-fix authenticated validation (2026-09-22)
+
+Two post-fix current-season schedule requests returned HTTP 200 and the complete top-level shape `season`, `weeks`, `_comment`. The season object was `{id, year, type, name}` for 2026 `REG`; [redacted] week objects contained Texans games keyed by stable game IDs. Both responses carried raw `x-generated-date: [redacted]`, normalized to `[redacted]`. `Last-Modified` was a different later file-build timestamp, which supports keeping the existing revision clock unchanged.
+
+The first week 3 injury request received HTTP 429. After a controlled cooldown, the same endpoint returned HTTP 200 with raw `x-generated-date: [redacted]`, normalized to `[redacted]`, and `teams: []`. The old generation date and empty team list are provider output, not evidence of an empty/healthy Texans report. Normalization therefore continued to fail clearly and the all-or-nothing transaction persisted no NFL domain rows.
+
+A read-only week 2 request was used only to verify the actual populated injury shape. It returned HTTP 200 with raw `x-generated-date: [redacted]`, normalized to `[redacted]`. The current normalizer accepted all [redacted] Texans records without modification. This diagnostic was not substituted for week 3 and was not persisted. Because there is still no successful current-week batch, live persisted idempotency and a saved Texans briefing cannot yet be verified; M3 remains in progress.
