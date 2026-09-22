@@ -44,3 +44,10 @@ Implementation complete — awaiting authenticated provider verification.
 - Corrected production candidate `85e427e` passed Standards review. Final candidate `3775c761eb3628d6e6cc0467220c76a2005572ac` passed independent Class-3 Spec/integrity review with no blocking findings. The last correction freezes M3 test clocks; both previously clock-dependent cases also passed with an outer January 1, 2027 clock.
 - Root reran all 56 tests and compile/diff checks on the final candidate. Actual loopback HTTP/CLI smoke passed against the corrected production code. Existing Arsenal implementation modules, schema, tests and SwiftUI files remain unchanged; only shared CLI/API entry points gained explicit Texans branches.
 - Completion is local implementation/offline verification. No authenticated NFL verification, paid subscription, push, deployment or client extension occurred. The user confirmed the NFL APIs are not ready. M3 remains `in-progress`: **Implementation complete — awaiting provider verification**.
+
+### 2026-09-22 authenticated schedule regression
+
+- The first entitled current-season schedule request returned successfully with normalized `x-generated-date` value `[redacted]`, then failed normalization with `schedule.id must be a non-empty string`; no NFL domain rows were written.
+- The bounded saved response prefix proves the live payload nests `id`, `year`, `type` and `name` inside top-level `season`, with `weeks` remaining top-level. The full raw body and response headers were not retained.
+- The normalizer now reads only the nested `season` identity. A sanitized live-shape fixture and regressions verify nested identity, reject a missing `season`, ignore conflicting legacy root metadata, and exercise the same structure through existing CLI/persistence tests.
+- All 59 offline tests pass. A post-fix authenticated rerun was unavailable to this process because `SPORTRADAR_API_KEY` was not present in its environment or repository `.env`; therefore schedule success, weekly injuries, raw header behavior and live idempotency remain unverified. M3 remains `in-progress`.

@@ -1,8 +1,10 @@
 {
-  "id": "season-2026-reg",
-  "year": 2026,
-  "type": "REG",
-  "name": "REG",
+  "season": {
+    "id": "season-2026-reg",
+    "year": 2026,
+    "type": "REG",
+    "name": "REG"
+  },
   "weeks": [
     {
       "id": "week-3",

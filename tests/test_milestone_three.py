@@ -119,6 +119,63 @@ class TexansMilestoneTests(unittest.TestCase):
         self.assertEqual(state["availability"][0]["practice_status"], "LIMITED")
         self.assertEqual(state["changes"][0]["change_type"], "NEW_REPORT")
 
+    def test_live_schedule_shape_reads_identity_from_nested_season(self) -> None:
+        live_shape = load("texans_schedule_live_shape.json")
+        live_shape.update({"id": "wrong-root-id", "year": 1900, "type": "PRE"})
+
+        normalized = normalize_schedule(live_shape)
+
+        self.assertEqual(normalized.season_id, "sanitized-season-2026-reg")
+        self.assertEqual(normalized.season_year, 2026)
+        self.assertEqual(normalized.season_type, "REG")
+        self.assertEqual(len(normalized.games), 1)
+        self.assertEqual(
+            normalized.games[0].provider_game_id,
+            "sanitized-game-texans-redacted",
+        )
+        self.assertEqual(normalized.games[0].away_team_name, "Houston Texans")
+
+    def test_live_schedule_shape_requires_nested_season_identity(self) -> None:
+        live_shape = load("texans_schedule_live_shape.json")
+        del live_shape["season"]
+
+        with self.assertRaisesRegex(
+            NormalizationError,
+            "schedule.season must be an object",
+        ):
+            normalize_schedule(live_shape)
+
+    def test_live_schedule_shape_ingests_and_repeats_without_duplicates(self) -> None:
+        live_shape = load("texans_schedule_live_shape.json")
+        injuries = deepcopy(self.limited)
+        injuries["season"]["id"] = "sanitized-season-2026-reg"
+        injuries["week"]["id"] = "sanitized-week-3"
+
+        first_code, first_output, first_error = self.ingest(
+            injuries,
+            "[redacted]",
+            schedule=live_shape,
+        )
+        second_code, second_output, second_error = self.ingest(
+            injuries,
+            "[redacted]",
+            schedule=live_shape,
+        )
+
+        self.assertEqual(first_code, 0, first_error)
+        self.assertEqual(second_code, 0, second_error)
+        self.assertEqual(json.loads(first_output)["outcomes"]["games_inserted"], 1)
+        self.assertEqual(json.loads(second_output)["outcomes"]["games_no_change"], 1)
+        self.assertEqual(json.loads(second_output)["outcomes"]["changes"], 0)
+        state = inspect_texans_state(self.database)
+        self.assertEqual(len(state["games"]), 1)
+        self.assertEqual(
+            state["games"][0]["provider_game_id"],
+            "sanitized-game-texans-redacted",
+        )
+        self.assertEqual(state["games"][0]["season_year"], 2026)
+        self.assertEqual(state["games"][0]["season_type"], "REG")
+
     def test_identical_rerun_is_idempotent(self) -> None:
         self.assertEqual(self.ingest(self.limited, "Sat, 26 Sep 2026 12:00:00 GMT")[0], 0)
         code, output, error = self.ingest(self.limited, "Sat, 26 Sep 2026 12:00:00 GMT")
@@ -367,7 +424,7 @@ class TexansMilestoneTests(unittest.TestCase):
         prior_changes = len(prior["changes"])
 
         reused = deepcopy(self.schedule)
-        reused.update({"id": "season-2025-reg", "year": 2025})
+        reused["season"].update({"id": "season-2025-reg", "year": 2025})
         injuries_2025 = deepcopy(self.limited)
         injuries_2025["season"].update({"id": "season-2025-reg", "year": 2025})
         code, _, error = self.ingest(
@@ -430,7 +487,7 @@ class TexansMilestoneTests(unittest.TestCase):
 
     def test_explicit_schedule_scope_mismatch_fails_before_injury_fetch(self) -> None:
         wrong = deepcopy(self.schedule)
-        wrong["year"] = 2025
+        wrong["season"]["year"] = 2025
         with patch.dict(os.environ, {"SPORTRADAR_API_KEY": "secret"}), patch(
             "sports_briefing.nfl.sportradar.urlopen",
             return_value=FakeResponse(wrong, "Sat, 26 Sep 2026 12:00:00 GMT"),

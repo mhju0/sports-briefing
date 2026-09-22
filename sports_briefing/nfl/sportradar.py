@@ -124,9 +124,10 @@ def fetch_weekly_injuries(
 
 def normalize_schedule(payload: dict[str, Any]) -> ScheduleSnapshot:
     root = _object(payload, "schedule")
-    season_id = _text(root.get("id"), "schedule.id")
-    season_year = _integer(root.get("year"), "schedule.year")
-    season_type = _text(root.get("type"), "schedule.type")
+    season = _object(root.get("season"), "schedule.season")
+    season_id = _text(season.get("id"), "schedule.season.id")
+    season_year = _integer(season.get("year"), "schedule.season.year")
+    season_type = _text(season.get("type"), "schedule.season.type")
     weeks = _list(root.get("weeks"), "schedule.weeks")
     games: list[NFLGame] = []
     seen: set[str] = set()

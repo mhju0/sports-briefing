@@ -1,6 +1,6 @@
 # Milestone 3: Texans availability ingestion
 
-Implementation and offline verification are complete. Authenticated NFL provider verification is pending; no NFL credential was present, and the user confirmed that these APIs are not ready yet. Scope is Houston Texans schedule, injury description, practice participation and game designation. The iPhone app is unchanged.
+Implementation and offline verification are complete. One authenticated schedule response exposed and confirmed a normalization mismatch; post-fix schedule and injury verification are pending because the credential was not available to this execution environment. Scope is Houston Texans schedule, injury description, practice participation and game designation. The iPhone app is unchanged.
 
 ## Provider decision — checked 2026-09-20
 
@@ -8,7 +8,7 @@ Implementation and offline verification are complete. Authenticated NFL provider
 | --- | --- | --- |
 | API-NFL / API-Sports | Current injury records provide identity/date/status/description; the official guide says injury history is not retained. Practice participation is not documented. Free access is 100 requests/day; Pro is listed at $15/month. | Cheapest candidate, but not enough evidence for Full/Limited/DNP. No key was available for an authenticated trial; do not substitute generic injury text for practice status. |
 | SportsDataIO | NFL injury schema includes PlayerID, InjuryID, BodyPart, Status and Updated. Current OpenAPI marks Practice and PracticeDescription deprecated; schedule data has ScoreID/GameKey and DateTimeUTC. Trial data can be scrambled; product entitlements differ. | Defer until entitled real payloads demonstrate reliable practice fields. A documented injury-status feed alone does not satisfy M3. |
-| Sportradar NFL v7 | Weekly Injuries explicitly separates player GUID, primary injury text, practice.status, injury.status and status_date. Official examples show DNP, Full and missing game designation. Season Schedule supplies game/team IDs and week identity. | Provisional single integration. Best documented match to the actual practice-change question; authenticated behavior still unverified. |
+| Sportradar NFL v7 | Weekly Injuries explicitly separates player GUID, primary injury text, practice.status, injury.status and status_date. Official examples show DNP, Full and missing game designation. Season Schedule supplies game/team IDs and week identity. | Provisional single integration. The authenticated schedule shape is partially verified; weekly injury behavior remains unverified. |
 
 Sources: [API-NFL guide](https://www.api-football.com/news/post/how-to-get-started-with-api-nfl-the-complete-beginners-guide), [API-NFL pricing](https://api-sports.io/sports/nfl), [SportsDataIO workflow](https://sportsdata.io/developers/workflow-guide/nfl), [SportsDataIO OpenAPI](https://cdn.sportsdata.io/openapi/NFL-openapi-3.1.json), [Sportradar weekly injuries](https://developer.sportradar.com/football/reference/nfl-weekly-injuries), [official injury examples](https://developer.sportradar.com/football/docs/nfl-ig-rosters), [schedule guide](https://developer.sportradar.com/football/docs/nfl-ig-schedules).
 
@@ -24,7 +24,7 @@ The [header documentation](https://developer.sportradar.com/getting-started/docs
 
 **Architectural judgment:** use the upstream generation timestamp to order snapshots, with report-date regression checks. Do not silently substitute local fetch time. Persist local before/after changes because a historical weekly endpoint does not establish access to every prior daily practice state.
 
-**Unverified:** actual credential entitlement, Texans payloads, header presence/ordering, status spelling variations, multiple injury entries, missing/empty team semantics, live nulls, latency and error/quota responses. Synthetic fixtures exercise a documented contract; they do not close this gap.
+**Unverified:** post-fix schedule acceptance, weekly Texans injury payloads, raw header presence/ordering, status spelling variations, multiple injury entries, missing/empty team semantics, live nulls, latency and error/quota responses. Synthetic fixtures exercise the observed schedule shape and documented injury contract; they do not close these gaps.
 
 ## Boundaries and limitations
 
@@ -134,4 +134,10 @@ The deterministic suite uses synthetic documentation-shaped fixtures; no test co
 
 A separate local smoke check copied the actual Arsenal database into a temporary database, injected synthetic Texans responses at the HTTP transport boundary, reran ingestion, restarted CLI processes and served both entities through actual loopback Uvicorn HTTP requests. The Arsenal briefing was unchanged. This proves local integration, not authenticated NFL provider fidelity.
 
-Authenticated validation remains pending. Before marking M3 complete, capture entitled Texans schedule/report responses and confirm GUIDs, scope identity, `x-generated-date`, player `status_date`, null/empty semantics, practice spelling, status changes and encountered error/quota behavior. Do not commit the credential or raw licensed payloads without a retention/redistribution review. Final test/review evidence is in the local milestone record.
+Post-fix authenticated validation remains pending. Before marking M3 complete, capture entitled Texans schedule/report responses and confirm GUIDs, scope identity, `x-generated-date`, player `status_date`, null/empty semantics, practice spelling, status changes and encountered error/quota behavior. Do not commit the credential or raw licensed payloads without a retention/redistribution review. Final test/review evidence is in the local milestone record.
+
+### First authenticated schedule finding (2026-09-22)
+
+The first entitled current-season schedule request succeeded, but normalization failed before the injury request. Its bounded diagnostic capture begins with a top-level `season` object followed by `weeks`; season identity is under `season.id`, `season.year` and `season.type`. The original synthetic fixture and normalizer incorrectly expected those fields at the payload root. The normalizer and offline fixtures now use the observed nested shape while leaving game, week, persistence and revision models unchanged.
+
+The saved fetch diagnostic records `schedule_generated_at=[redacted]`. This is the adapter's normalized value from `x-generated-date`; the original response headers were not retained, so this capture does not establish the raw header spelling or any `Last-Modified` behavior. The saved body is also intentionally truncated at 256 KiB, so only the parsed prefix is treated as live evidence. Post-fix schedule, injury and repeated-ingest verification still require an authenticated rerun.
