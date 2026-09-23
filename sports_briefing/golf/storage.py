@@ -2,15 +2,16 @@
 from __future__ import annotations
 
 from contextlib import closing
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta
 import hashlib
 import json
 from pathlib import Path
 import sqlite3
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from ..storage import RAW_DIAGNOSTIC_LIMIT_BYTES, StorageError, initialize_database
-from .sportradar import PROVIDER, Response
+from .sportradar import PROVIDER, SCOTTIE_ID, Response
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS golf_tournaments (
@@ -25,7 +26,8 @@ CREATE TABLE IF NOT EXISTS golf_entries (
  provider TEXT NOT NULL, tournament_id TEXT NOT NULL, player_id TEXT NOT NULL,
  display_name TEXT NOT NULL, field_confirmed INTEGER NOT NULL CHECK(field_confirmed=1),
  participation_source TEXT NOT NULL, position INTEGER, tied INTEGER, score INTEGER,
- strokes INTEGER, status TEXT, first_seen_at TEXT NOT NULL, last_changed_at TEXT NOT NULL,
+ strokes INTEGER, status TEXT, result_finalized_observed_at TEXT,
+ first_seen_at TEXT NOT NULL, last_changed_at TEXT NOT NULL,
  PRIMARY KEY(provider,tournament_id,player_id)
 );
 CREATE TABLE IF NOT EXISTS golf_player_rounds (
@@ -66,6 +68,10 @@ def initialize_golf_database(path: Path) -> None:
     with closing(sqlite3.connect(path)) as conn:
         with conn:
             conn.executescript(SCHEMA)
+            conn.execute("BEGIN IMMEDIATE")
+            columns = {row[1] for row in conn.execute("PRAGMA table_info(golf_entries)")}
+            if "result_finalized_observed_at" not in columns:
+                conn.execute("ALTER TABLE golf_entries ADD COLUMN result_finalized_observed_at TEXT")
 
 
 def _hash(value: object) -> str:
@@ -84,6 +90,38 @@ def _source_content(bundle: dict[str, Any], key: str) -> object:
         return bundle["source_semantics"][key]
     except KeyError as exc:
         raise StorageError(f"missing normalized Golf source semantics: {key}") from exc
+
+
+def _terminal_scottie_result(tournament: dict[str, Any], entry: dict[str, Any], rounds: list[dict[str, Any]]) -> bool:
+    """A complete stroke-play result, excluding exceptions and partial rounds."""
+    return (
+        tournament["event_type"] == "stroke"
+        and tournament["status"] == "closed"
+        and entry["player_id"] == SCOTTIE_ID
+        and entry["field_confirmed"] == 1
+        and entry["status"] is None
+        and isinstance(entry["position"], int) and entry["position"] > 0
+        and isinstance(entry["score"], int)
+        and isinstance(entry["strokes"], int) and entry["strokes"] > 0
+        and bool(rounds)
+        and all(r["status"] == "closed" and r["thru"] == 18
+                and isinstance(r["score"], int) and isinstance(r["strokes"], int) and r["strokes"] > 0
+                for r in rounds)
+    )
+
+
+def _plausible_finalization_date(tournament: dict[str, Any], observed_at: str) -> bool:
+    """Bound observation to the event's local final date or following day."""
+    try:
+        observed = datetime.fromisoformat(observed_at.replace("Z", "+00:00"))
+        if observed.tzinfo is None:
+            raise ValueError("timezone missing")
+        local_day = observed.astimezone(ZoneInfo(tournament["course_timezone"])).date()
+        start = date.fromisoformat(tournament["start_date"])
+        end = date.fromisoformat(tournament["end_date"])
+    except (ValueError, ZoneInfoNotFoundError) as exc:
+        raise StorageError("invalid Golf observation time or course timezone") from exc
+    return start <= end and end <= local_day <= end + timedelta(days=1)
 
 
 def persist_golf_fetch(path: Path, bundle: dict[str, Any], responses: dict[str, Response], *, started_at: str, completed_at: str) -> dict[str, int]:
@@ -115,12 +153,24 @@ def persist_golf_fetch(path: Path, bundle: dict[str, Any], responses: dict[str, 
                     raise StorageError(f"conflicting Golf content at equal generation for {scopes[key]}")
             tournament = bundle["tournament"]
             tid = tournament["id"]
+            entry = bundle["entry"]
+            previous_tournament = conn.execute("SELECT status FROM golf_tournaments WHERE provider=? AND tournament_id=?", (PROVIDER,tid)).fetchone()
+            previous_entry = conn.execute("SELECT field_confirmed,status,result_finalized_observed_at FROM golf_entries WHERE provider=? AND tournament_id=? AND player_id=?", (PROVIDER,tid,entry["player_id"])).fetchone()
+            observe_finalization = (
+                previous_tournament is not None
+                and previous_tournament["status"] in ("scheduled", "inprogress")
+                and previous_entry is not None
+                and previous_entry["field_confirmed"] == 1
+                and previous_entry["status"] is None
+                and previous_entry["result_finalized_observed_at"] is None
+                and _terminal_scottie_result(tournament, entry, bundle["rounds"])
+                and _plausible_finalization_date(tournament, completed_at)
+            )
             existing_round_ids = {r[0] for r in conn.execute("SELECT round_id FROM golf_player_rounds WHERE provider=? AND tournament_id=? AND player_id=?",(PROVIDER,tid,bundle["entry"]["player_id"]))}
             incoming_round_ids = {r["round_id"] for r in bundle["rounds"]}
             if not existing_round_ids.issubset(incoming_round_ids):
                 raise StorageError("newer Golf round list omits a previously accepted round; retirement semantics unverified")
             _upsert(conn, "golf_tournaments", {"provider":PROVIDER,"tournament_id":tid,**{k:tournament[k] for k in TOURNAMENT_FIELDS}}, ("provider","tournament_id"), TOURNAMENT_FIELDS, completed_at, counts)
-            entry = bundle["entry"]
             _upsert(conn, "golf_entries", {"provider":PROVIDER,"tournament_id":tid,"player_id":entry["player_id"],**{k:int(entry[k]) if k in ("field_confirmed","tied") and entry[k] is not None else entry[k] for k in ENTRY_FIELDS}}, ("provider","tournament_id","player_id"), ENTRY_FIELDS, completed_at, counts)
             for round_state in bundle["rounds"]:
                 record={"provider":PROVIDER,"tournament_id":tid,"player_id":entry["player_id"],"round_id":round_state["round_id"],**{k:round_state["created_at"] if k=="scorecard_created_at" else round_state["updated_at"] if k=="scorecard_updated_at" else round_state[k] for k in ROUND_FIELDS}}
@@ -131,6 +181,8 @@ def persist_golf_fetch(path: Path, bundle: dict[str, Any], responses: dict[str, 
                             if record[field] is None:
                                 record[field] = previous[field]
                 _upsert(conn, "golf_player_rounds", record, ("provider","tournament_id","player_id","round_id"), ROUND_FIELDS, completed_at, counts)
+            if observe_finalization:
+                conn.execute("UPDATE golf_entries SET result_finalized_observed_at=? WHERE provider=? AND tournament_id=? AND player_id=? AND result_finalized_observed_at IS NULL", (completed_at,PROVIDER,tid,entry["player_id"]))
             for key, response in responses.items():
                 current = prior[key]
                 changed = current is None or current["semantic_hash"] != hashes[key]
@@ -180,6 +232,9 @@ def load_golf_state(path: Path) -> tuple[list[dict[str,Any]],dict[str,Any]]:
             tid=tournament["tournament_id"]
             entry=conn.execute("SELECT * FROM golf_entries WHERE provider=? AND tournament_id=?",(PROVIDER,tid)).fetchone()
             tournament["entry"]=dict(entry) if entry is not None else None
+            if tournament["entry"] is not None:
+                # Read-only clients may inspect a pre-migration database.
+                tournament["entry"].setdefault("result_finalized_observed_at", None)
             tournament["rounds"]=[dict(r) for r in conn.execute("SELECT * FROM golf_player_rounds WHERE provider=? AND tournament_id=? ORDER BY number",(PROVIDER,tid))]
             sources=conn.execute("SELECT endpoint_key,url,generated_at,accepted_at,last_fetched_at FROM golf_sources WHERE provider=? AND (endpoint_key=? OR endpoint_key=? OR endpoint_key LIKE ?)",(PROVIDER,f"summary:{tid}",f"leaderboard:{tid}",f"tees:{tid}:%")).fetchall()
             tournament["sources"]={r["endpoint_key"]:dict(r) for r in sources}

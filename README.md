@@ -12,7 +12,7 @@ Milestone 3 adds a separate Texans schedule and practice/status-change pipeline.
 
 Milestone 4 adds a deterministic, read-only Arsenal + Texans home timeline with explicit cross-sport precedence, sparse per-entity selection, explainable reasons, and CLI/HTTP output. M4 is offline-complete; it does not close M3's separate authenticated current-week persistence/idempotency gate. See [M4 behavior and ranking rules](docs/milestone-4.md).
 
-Milestone 5 adds bounded Scottie Scheffler PGA stroke-play ingestion and conservative tee-time candidates. Authenticated ingestion, persisted readback, and unchanged rerun are verified; Scottie-specific live-state evidence and an honest recent-result time rule remain open. See [M5 setup and evidence](docs/milestone-5.md).
+Milestone 5 adds bounded Scottie Scheffler PGA stroke-play ingestion, conservative tee-time candidates, and product-observed recent-result eligibility after a known finalization transition. Authenticated ingestion, persisted readback, and unchanged rerun are verified; Scottie-specific live-state evidence remains open. See [M5 setup and evidence](docs/milestone-5.md).
 
 ## Run Milestone 1
 
@@ -37,7 +37,7 @@ M1 ingestion/CLI use only the Python standard library. For the complete test sui
 - [Milestone 2 setup](docs/milestone-2.md): local API, iPhone client, contract and limitations
 - [Milestone 3 setup](docs/milestone-3.md): Texans ingestion, change history and provider-verification gate
 - [Milestone 4 setup](docs/milestone-4.md): cross-sport candidates, ranking, timeline CLI/API and limits
-- [Milestone 5 setup](docs/milestone-5.md): Scottie Golf ingestion, source clocks, tee-time candidates and open gates
+- [Milestone 5 setup](docs/milestone-5.md): Scottie Golf ingestion, source clocks, tee-time and observed-result candidates, and the remaining LIVE gate
 
 This is a separate repository from FullCourt. No FullCourt code is copied.
 
