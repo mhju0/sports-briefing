@@ -23,7 +23,7 @@ def derive_golf_candidates(tournaments: list[dict[str,Any]], *, as_of: datetime,
         for round_state in tournament["rounds"]:
             if round_state["status"] != "scheduled" or round_state["tee_time"] is None:
                 continue
-            if (round_state["thru"] or 0)>0 or (round_state["strokes"] or 0)>0:
+            if (round_state["thru"] or 0)>0 or (round_state["strokes"] or 0)>0 or (round_state["score"] or 0)!=0:
                 continue
             tee=_parse_timestamp(round_state["tee_time"],"Scottie tee time")
             remaining=tee-as_of
