@@ -247,7 +247,13 @@ def normalize_bundle(tournament: dict[str, Any], responses: dict[str, Response])
             pr = board_player_rounds[number]
             rr.update(score=optional_integer(pr.get("score"), "player round score"), strokes=optional_integer(pr.get("strokes"), "player round strokes"), thru=optional_integer(pr.get("thru"), "player round thru"))
         rounds.append(rr)
+    leaderboard_rounds = [
+        {key: r[key] for key in ("round_id", "number", "status", "score", "strokes", "thru")}
+        for r in rounds
+    ]
     selected = select_round(rounds, tournament["status"])
+    tee_projection = None
+    scorecard_projection = None
     if selected is not None:
         number = selected["number"]
         for key in ("tees", "scores"):
@@ -266,6 +272,7 @@ def normalize_bundle(tournament: dict[str, Any], responses: dict[str, Response])
             raise NormalizationError("Scottie has duplicate pairing")
         if own_pairings:
             selected["tee_time"] = optional_timestamp(own_pairings[0].get("tee_time"), "pairing.tee_time")
+        tee_projection = {"tournament_id": tid, "round_id": selected["round_id"], "number": number, "status": selected["status"], "tee_time": selected["tee_time"]}
         scores = [obj(p, "round score player") for p in arr(responses["scores"].payload["round"].get("players"), "round.players") if isinstance(p, dict) and p.get("id") == SCOTTIE_ID]
         if len(scores) > 1:
             raise NormalizationError("duplicate Scottie scorecard")
@@ -278,8 +285,18 @@ def normalize_bundle(tournament: dict[str, Any], responses: dict[str, Response])
                 selected[field_name] = score_value
             selected["created_at"] = optional_timestamp(score.get("created_at"), "scorecard.created_at")
             selected["updated_at"] = optional_timestamp(score.get("updated_at"), "scorecard.updated_at")
+        scorecard_projection = {"tournament_id": tid, "round_id": selected["round_id"], "number": number, "status": selected["status"], "player": {key: selected[key] for key in ("score", "strokes", "thru", "created_at", "updated_at")} if scores else None}
     entry = {"player_id": SCOTTIE_ID, "display_name": display, "field_confirmed": True, "participation_source": responses["summary"].url, "position": optional_integer(player.get("position"), "player.position") if player else None, "tied": tied, "score": optional_integer(player.get("score"), "player.score") if player else None, "strokes": optional_integer(player.get("strokes"), "player.strokes") if player else None, "status": status}
-    return {"tournament": tournament, "entry": entry, "rounds": rounds, "selected_round": selected["number"] if selected else None}
+    metadata = {key: tournament[key] for key in ("start_date", "end_date", "course_timezone", "event_type", "status")}
+    semantics = {
+        "schedule": {key: tournament[key] for key in ("id", "name", "tour_id", "tour_alias", "season_id", "season_year", "start_date", "end_date", "course_timezone", "event_type", "status")},
+        "summary": {"tournament_id": tid, **metadata, "season_id": tournament["season_id"], "tour_id": tournament["tour_id"], "field": {"player_id": SCOTTIE_ID, "display_name": display}, "rounds": [{key: r[key] for key in ("round_id", "number", "status")} for r in rounds]},
+        "leaderboard": {"tournament_id": tid, **metadata, "rounds": leaderboard_rounds, "player": {key: entry[key] for key in ("position", "tied", "score", "strokes", "status")} if player else None},
+    }
+    if tee_projection is not None:
+        semantics["tees"] = tee_projection
+        semantics["scores"] = scorecard_projection
+    return {"tournament": tournament, "entry": entry, "rounds": rounds, "selected_round": selected["number"] if selected else None, "source_semantics": semantics}
 
 
 def retrieve_scottie(api_key: str, *, year: int, today: date, timeout: float = 15.0, transport: Callable[[str, str, float], Response] = fetch) -> tuple[dict[str, Any], dict[str, Response]]:

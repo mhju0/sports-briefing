@@ -80,20 +80,10 @@ def _bounded(value: str) -> tuple[str, int]:
 
 
 def _source_content(bundle: dict[str, Any], key: str) -> object:
-    tournament, entry, rounds = bundle["tournament"], bundle["entry"], bundle["rounds"]
-    if key == "schedule":
-        return {k: tournament[k] for k in TOURNAMENT_FIELDS}
-    if key == "summary":
-        return {"tournament_id": tournament["id"], "field": {k: entry[k] for k in ("player_id","display_name","field_confirmed")}, "rounds": [{k: r[k] for k in ("round_id","number","status")} for r in rounds]}
-    if key == "leaderboard":
-        return {"entry": {k: entry[k] for k in ("position","tied","score","strokes","status")}, "rounds": [{k: r[k] for k in ("number","score","strokes","thru")} for r in rounds]}
-    if key == "tees":
-        selected = next(r for r in rounds if r["number"] == bundle["selected_round"])
-        return {"tournament_id": tournament["id"], "round_id": selected["round_id"], "tee_time": selected["tee_time"]}
-    if key == "scores":
-        selected = next(r for r in rounds if r["number"] == bundle["selected_round"])
-        return {k: selected[k] for k in ("round_id","score","strokes","thru","created_at","updated_at")}
-    raise StorageError(f"unknown Golf source: {key}")
+    try:
+        return bundle["source_semantics"][key]
+    except KeyError as exc:
+        raise StorageError(f"missing normalized Golf source semantics: {key}") from exc
 
 
 def persist_golf_fetch(path: Path, bundle: dict[str, Any], responses: dict[str, Response], *, started_at: str, completed_at: str) -> dict[str, int]:
@@ -125,6 +115,10 @@ def persist_golf_fetch(path: Path, bundle: dict[str, Any], responses: dict[str, 
                     raise StorageError(f"conflicting Golf content at equal generation for {scopes[key]}")
             tournament = bundle["tournament"]
             tid = tournament["id"]
+            existing_round_ids = {r[0] for r in conn.execute("SELECT round_id FROM golf_player_rounds WHERE provider=? AND tournament_id=? AND player_id=?",(PROVIDER,tid,bundle["entry"]["player_id"]))}
+            incoming_round_ids = {r["round_id"] for r in bundle["rounds"]}
+            if not existing_round_ids.issubset(incoming_round_ids):
+                raise StorageError("newer Golf round list omits a previously accepted round; retirement semantics unverified")
             _upsert(conn, "golf_tournaments", {"provider":PROVIDER,"tournament_id":tid,**{k:tournament[k] for k in TOURNAMENT_FIELDS}}, ("provider","tournament_id"), TOURNAMENT_FIELDS, completed_at, counts)
             entry = bundle["entry"]
             _upsert(conn, "golf_entries", {"provider":PROVIDER,"tournament_id":tid,"player_id":entry["player_id"],**{k:int(entry[k]) if k in ("field_confirmed","tied") and entry[k] is not None else entry[k] for k in ENTRY_FIELDS}}, ("provider","tournament_id","player_id"), ENTRY_FIELDS, completed_at, counts)
