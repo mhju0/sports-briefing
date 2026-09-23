@@ -101,12 +101,14 @@ def build_home_timeline(
     )
     from .arsenal_timeline import load_arsenal_timeline_candidates
     from .nfl.timeline import load_texans_timeline_candidates
+    from .golf.timeline import load_golf_timeline_candidates
 
     candidates: list[TimelineCandidate] = []
     unavailable: list[str] = []
     for entity_id, loader in (
         ("arsenal", load_arsenal_timeline_candidates),
         ("texans", load_texans_timeline_candidates),
+        ("scheffler", load_golf_timeline_candidates),
     ):
         try:
             candidates.extend(loader(database, evaluation_time, hide_results=hide_results))
@@ -197,7 +199,12 @@ def _is_missing_state(entity_id: str, error: Exception) -> bool:
             "database contains no successful Arsenal ingestion",
             "no such table: provider_fetches",
         }
+    if entity_id == "texans":
+        return message in {
+            "database contains no successful Texans ingestion",
+            "no such table: nfl_fetches",
+        }
     return message in {
-        "database contains no successful Texans ingestion",
-        "no such table: nfl_fetches",
+        "database contains no successful Scottie ingestion",
+        "no such table: golf_fetches",
     }

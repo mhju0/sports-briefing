@@ -1,0 +1,39 @@
+# Milestone 5: Scottie Scheffler Golf ingestion (in progress)
+
+The bounded M5 slice stores one confirmed Scottie Scheffler PGA stroke-play tournament from Sportradar Golf trial REST data. It preserves tournament dates as dates, actual tee times as UTC instants, four provider round identities/statuses, Scottie's field entry, leaderboard totals, selected-round scorecard facts, and source clocks. The profile endpoint established Scottie's UUID during provider proof; routine ingestion uses that UUID and does not refetch his historical profile.
+
+## Run
+
+Export the existing `SPORTRADAR_API_KEY` privately (the CLI does not auto-load `.env`). Then:
+
+```sh
+python3 -m sports_briefing ingest scheffler
+python3 -m sports_briefing inspect scheffler
+python3 -m sports_briefing timeline
+python3 -m sports_briefing timeline --show-results
+python3 -m unittest discover -s tests -q
+```
+
+The CLI uses the current UTC calendar year and calls the PGA schedule. Discovery checks at most two current stroke-play tournaments, the three nearest upcoming within 60 days, then three most recent completed within 60 days. It fetches each summary until Scottie's UUID appears in `field`; a schedule listing or profile history alone never confirms participation. If none qualifies, ingestion fails clearly and the previous database state stays intact. This probe cap is not exhaustive season coverage. Tournament summary, leaderboard, and the selected round's tee times and scores complete one validated bundle. Requests are spaced to respect trial throughput. Cup, team, match and mixed formats are outside scope.
+
+An authenticated September 23 [redacted tournament] upcoming summary returned HTTP 200 with no `field`, `rounds`, `status`, or `x-generated-date`. Such a discovery response is treated as unconfirmed and skipped. It is not evidence of withdrawal or non-participation. Every response accepted into persisted Scottie state still requires `x-generated-date`. Per-request logs and the CLI's `requests` versus `accepted_endpoints` fields distinguish probes from the accepted bundle.
+
+## Tables and provenance
+
+`golf_tournaments` stores provider tournament identity, PGA tour/season identity, date-only start/end, timezone, status, and stroke-play type. `golf_entries` stores Scottie's confirmed field identity and nullable leaderboard status/result. `golf_player_rounds` stores round UUID/number/status and nullable Scottie-specific tee time/score/thru/scorecard timestamps. `golf_sources` keeps one bounded latest raw response per endpoint scope, parsed and raw `x-generated-date`, ETag, Last-Modified, semantic hash, accepted time, and last fetch time. `golf_fetches` retains the last 20 successful batch outcomes; it does not store an event history.
+
+All endpoint revisions are checked before any domain write within one SQLite transaction. Stable provider keys upsert normalized rows. Identical Scottie-specific semantics do not change domain `last_changed_at` or source `accepted_at`; a later generation header with identical semantics advances only the source high-water clock and fetch diagnostics. Older generations and equal-generation conflicting content fail without partial replacement. Newer generations with changed semantics update state. This is a conservative provisional policy: actual monotonic behavior across a changed Golf response is not yet observed. ETag and Last-Modified never order sports state. The schedule revision is scoped to the selected tournament, so a different confirmed tournament does not conflict with an unchanged full schedule generation.
+
+## Home timeline
+
+Golf emits only a confirmed upcoming round with an actual player tee time, tournament and round both `scheduled`, and no observed player score/holes or explicit exception status. A tee time within 24 hours produces `IMMINENT`; within seven days produces `ROUTINE`. One nearest round candidate per Scottie is selected. The shared ranker and tiers are unchanged; golf `result` remains null. A completed result stays in SQLite/`inspect` but does not enter home because no authentic completion timestamp was found. `LIVE` and `MEANINGFUL_CHANGE` remain disabled for Golf. No status is inferred from missing player/tee-time data.
+
+The timeline `--as-of` switch evaluates current persisted state; it is not historical replay. The API `GET /timeline` uses the same candidate adapter and remains spoiler-safe by default. No Golf result fields are placed in timeline output even when `--show-results` is set, so the current Golf timeline does not reveal position, tie, score, strokes, WD or winner.
+
+## Evidence and open gates
+
+Sanitized fixtures under `tests/fixtures/golf` derive from authenticated September 23, 2026 responses for the 2026 schedule, Scottie profile, [redacted tournament] summary, round-4 tee times, leaderboard including one other player's observed `WD`, round-4 scorecard, and the [redacted tournament] pre-field summary. The repeated leaderboard fixture captures an identical refetch. Profile is a proof fixture, not runtime input. Offline tests cover identity, field confirmation, date/time preservation, source and transaction behavior, revision conflicts, sparse candidates, and spoiler output.
+
+Authenticated September 23 ingestion selected [redacted tournament] after nine total requests (five accepted source endpoints). The first successful batch inserted one tournament, one Scottie entry, and four rounds, and accepted five source revisions. A second immediate batch made zero inserts or updates, reported six unchanged domain rows and five unchanged source revisions. Persisted counts were one tournament, one entry, four rounds, five sources, and two bounded fetch records. Every domain value including `last_changed_at`, accepted source hash, and `accepted_at` remained unchanged; only source `last_fetched_at` advanced. A separate process read back Scottie's position [redacted], score [redacted], [redacted] strokes, and round-4 tee time `[redacted]`, score [redacted], [redacted] strokes, 18 through, and scorecard update `[redacted]`. Two fixed-`as_of` timeline runs returned the same empty, result-hidden item list, as expected for a completed event without an approved recent-result clock. All seven preexisting Arsenal/Texans tables retained their exact row counts and content hashes. The complete offline suite passed 102 tests, including 21 focused Golf tests.
+
+Still open after this implementation pass unless later live evidence resolves them: actual Scottie-playing `LIVE` predicate, changed-response generation ordering, an honest recent-result completion/observation time, and unobserved CUT/DNS/DQ/MDF semantics. The current slice makes no M5 Done claim. Production access, redistribution rights, and broad tournament coverage are unverified. M3's separate Week 3 NFL upstream blocker remains unchanged.

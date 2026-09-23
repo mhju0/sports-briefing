@@ -435,7 +435,7 @@ class PersistedTimelineTests(unittest.TestCase):
         self.assertEqual(timeline["items"][0]["reason"], "starts_soon")
         self.assertEqual(timeline["items"][1]["entity"]["id"], "texans")
         self.assertEqual(timeline["items"][1]["reason"], "meaningful_status_change")
-        self.assertEqual(timeline["unavailable_entities"], [])
+        self.assertEqual(timeline["unavailable_entities"], ["scheffler"])
 
     def test_old_or_unchanged_context_does_not_fill_the_timeline(self) -> None:
         self.seed_texans(generated="2026-09-01T10:00:00Z", observed="2026-09-01T10:05:00Z")
@@ -446,7 +446,7 @@ class PersistedTimelineTests(unittest.TestCase):
         )
 
         self.assertEqual(timeline["items"], [])
-        self.assertEqual(timeline["unavailable_entities"], ["arsenal"])
+        self.assertEqual(timeline["unavailable_entities"], ["arsenal", "scheffler"])
 
     def test_missing_texans_is_reported_separately_from_a_quiet_entity(self) -> None:
         self.seed_arsenal()
@@ -456,7 +456,7 @@ class PersistedTimelineTests(unittest.TestCase):
             as_of="2026-09-23T12:00:00Z",
         )
 
-        self.assertEqual(timeline["unavailable_entities"], ["texans"])
+        self.assertEqual(timeline["unavailable_entities"], ["texans", "scheffler"])
 
     def test_api_is_spoiler_safe_and_excludes_raw_provider_payloads(self) -> None:
         self.seed_arsenal(completed_at="2026-09-14T12:00:00Z")
@@ -521,7 +521,7 @@ class PersistedTimelineTests(unittest.TestCase):
         self.assertEqual(code, 0, stderr.getvalue())
         output = json.loads(stdout.getvalue())
         self.assertEqual(output["items"][0]["reason"], "starts_soon")
-        self.assertEqual(output["unavailable_entities"], ["texans"])
+        self.assertEqual(output["unavailable_entities"], ["texans", "scheffler"])
 
 
 if __name__ == "__main__":

@@ -45,6 +45,8 @@ from .nfl.storage import (
     persist_texans_fetch,
     record_failed_texans_fetch,
 )
+from .golf.sportradar import ProviderError as GolfProviderError, NormalizationError as GolfNormalizationError, retrieve_scottie
+from .golf.storage import initialize_golf_database, persist_golf_fetch, inspect_golf_state
 
 
 LOGGER = logging.getLogger("sports_briefing")
@@ -57,7 +59,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
     try:
         if args.command == "ingest":
-            result = _ingest_arsenal(args) if args.entity == "arsenal" else _ingest_texans(args)
+            result = _ingest_arsenal(args) if args.entity == "arsenal" else _ingest_texans(args) if args.entity == "texans" else _ingest_scheffler(args)
         elif args.command == "briefing":
             if args.entity == "arsenal":
                 result = build_arsenal_briefing(
@@ -82,12 +84,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                 len(result["items"]),
             )
         else:
-            result = inspect_state(args.db) if args.entity == "arsenal" else inspect_texans_state(args.db)
+            result = inspect_state(args.db) if args.entity == "arsenal" else inspect_texans_state(args.db) if args.entity == "texans" else inspect_golf_state(args.db)
     except (
         ProviderError,
         NFLProviderError,
         NormalizationError,
         NFLNormalizationError,
+        GolfProviderError,
+        GolfNormalizationError,
         StorageError,
         BriefingError,
         TimelineError,
@@ -356,12 +360,34 @@ def _ingest_texans(args: argparse.Namespace) -> dict[str, object]:
     }
 
 
+def _ingest_scheffler(args: argparse.Namespace) -> dict[str, object]:
+    if any(value is not None for value in (args.season, args.season_type, args.week, args.date_from, args.date_to)):
+        raise ValueError("Arsenal/Texans scope options do not apply to Scottie ingestion")
+    api_key = os.environ.get("SPORTRADAR_API_KEY")
+    if not api_key:
+        raise ValueError("SPORTRADAR_API_KEY is required")
+    initialize_golf_database(args.db)
+    started = _now()
+    today = datetime.now(timezone.utc).date()
+    LOGGER.info("fetch_start provider=sportradar entity=scheffler source=pga_schedule year=%s", today.year)
+    try:
+        bundle, responses = retrieve_scottie(api_key, year=today.year, today=today, timeout=args.timeout)
+    except (GolfProviderError, GolfNormalizationError):
+        LOGGER.exception("provider_or_normalization_failure entity=scheffler")
+        raise
+    finished = _now()
+    LOGGER.info("fetch_end provider=sportradar entity=scheffler requests=%s accepted_endpoints=%s tournament=%s", bundle["request_count"], len(responses), bundle["tournament"]["id"])
+    counts = persist_golf_fetch(args.db, bundle, responses, started_at=started, completed_at=finished)
+    LOGGER.info("persistence_complete entity=scheffler outcomes=%s", counts)
+    return {"entity":"scheffler","provider":"sportradar","tournament_id":bundle["tournament"]["id"],"requests":bundle["request_count"],"accepted_endpoints":len(responses),"outcomes":counts,"fetched_at":finished}
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="python -m sports_briefing")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     ingest = subparsers.add_parser("ingest", help="fetch and persist provider data")
-    ingest.add_argument("entity", choices=("arsenal", "texans"))
+    ingest.add_argument("entity", choices=("arsenal", "texans", "scheffler"))
     ingest.add_argument("--from", dest="date_from", type=_iso_date)
     ingest.add_argument("--to", dest="date_to", type=_iso_date, help="exclusive end date")
     ingest.add_argument("--db", type=Path, default=DEFAULT_DATABASE)
@@ -377,11 +403,11 @@ def _parser() -> argparse.ArgumentParser:
     briefing.add_argument("--hide-results", action="store_true")
 
     inspect = subparsers.add_parser("inspect", help="inspect normalized persisted state")
-    inspect.add_argument("entity", choices=("arsenal", "texans"))
+    inspect.add_argument("entity", choices=("arsenal", "texans", "scheffler"))
     inspect.add_argument("--db", type=Path, default=DEFAULT_DATABASE)
 
     timeline = subparsers.add_parser(
-        "timeline", help="derive the ranked Arsenal + Texans home timeline"
+        "timeline", help="derive the ranked Arsenal + Texans + Scottie home timeline"
     )
     timeline.add_argument("--db", type=Path, default=DEFAULT_DATABASE)
     timeline.add_argument(
@@ -469,9 +495,9 @@ def _now() -> str:
 
 
 def _stage(exc: Exception) -> str:
-    if isinstance(exc, (ProviderError, NFLProviderError)):
+    if isinstance(exc, (ProviderError, NFLProviderError, GolfProviderError)):
         return "provider"
-    if isinstance(exc, (NormalizationError, NFLNormalizationError)):
+    if isinstance(exc, (NormalizationError, NFLNormalizationError, GolfNormalizationError)):
         return "normalization"
     if isinstance(exc, StorageError):
         return "persistence"
