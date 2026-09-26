@@ -1,77 +1,133 @@
 # Milestone 7: bounded summary synthesis
 
-M7's first slice adds an optional, cached replacement for one field, `summary`, on candidates that deterministic ranking has already selected. There is no model provider, SDK, credential, network call, prompt text or generation trigger. Tests use a fake model. Without a profile the timeline is byte-for-byte the template output. The HTTP API and CLI pass no profile, so they are unchanged.
+M7 asks whether generated prose improves the timeline enough to justify a model, and does it without ever letting a model decide facts or ranking.
 
-## Boundary
+- **Slice 1** built the provider-independent boundary: an optional, verified, cached replacement for one field (`summary`) on candidates that ranking has already selected.
+- **Slice 2** adds a versioned prompt contract and an offline evaluation set, so a real model can be judged before it is enabled.
 
-`SQLite → candidates → rank_candidates → apply_cached_summaries (optional) → JSON projection`
+## Built
 
-- Titles, identity, state, tier, order, the 2-per-entity cap, times, competition, provenance and result fields remain deterministic. A cached entry can only swap `summary` on an item that is already selected.
-- `apply_cached_summaries` only reads (read-only connection) and never calls a model. A missing database, table or row, or a corrupt or incompatible row, keeps that candidate's template. Other candidates are unaffected.
-- `generate_cached_summary` is the only write path: build input → model → verify → `INSERT OR REPLACE`. A model exception or a rejected output writes nothing, and an existing entry survives. Nothing calls it yet; there is no scheduler.
+- **Deterministic selection first.** `SQLite → candidates → rank_candidates → apply_cached_summaries (optional) → JSON projection`. Titles, identity, state, tier, order, the 2-per-entity cap, times, competition, provenance and result fields never change.
+- **Verified cache with template fallback.**
+  - `apply_cached_summaries` only reads and never calls a model. A missing database, table or row, or a corrupt or incompatible row, keeps that candidate's template. Other candidates are unaffected.
+  - `/timeline` and the CLI pass no synthesis profile, so their output is exactly the template output.
+- **Prompt contract.** `PROMPT_VERSION = "summary-en-v1"` and `SUMMARY_INSTRUCTIONS` in `sports_briefing/synthesis.py` are the one English contract.
+  - `build_prompt_request` returns a provider-neutral request in which evidence stays a separate data list and is never spliced into the instructions.
+  - `SynthesisProfile.prompt_version` defaults to this version.
+  - Changing the instructions requires a new version, which also invalidates cached prose.
+- **Evaluation set and runner.**
+  - Cases: `tests/fixtures/synthesis/summary_eval_cases.json`.
+  - Report: `python -m sports_briefing.synthesis_eval tests/fixtures/synthesis/summary_eval_cases.json`.
+- **Generation seam.** `generate_cached_summary(database, candidate, …, model)` builds input → model → verify → `INSERT OR REPLACE`. A model exception or a rejected output writes nothing. The only model is the tests' fake.
+
+## Not built
+
+- a real LLM integration, SDK or credentials, or any provider/model choice;
+- transmission of any source data outside the process;
+- automated or request-time generation, a scheduler, or retries;
+- runtime configuration of a synthesis profile, deployment, or an API marker for generated text;
+- bilingual output;
+- cache pruning.
 
 ## Model-facing evidence
 
-`build_synthesis_input` derives local evidence IDs from the candidate: `entity_name`, `title`, `baseline_summary`, `event_state`, plus `competition` (name), `event_time` and `change_time` when present. `result` (canonical JSON) is included only in `show_results` mode. Candidates are already spoiler-filtered by their loaders, and the input builder drops `result` in `hide_results` mode even if a candidate still carries one.
+`build_synthesis_input` derives local evidence IDs from the candidate: `entity_name`, `title`, `baseline_summary`, `event_state`, plus `competition` (name), `event_time` and `change_time` when present. `result` (canonical JSON) is included only in `show_results` mode.
 
-Provenance, tier and observation/generation timestamps are not evidence. The model receives no article text or raw provider payloads.
+Candidates are already spoiler-filtered by their loaders, and the builder drops `result` in `hide_results` mode even if a candidate still carries one. Provenance, tier and observation times are not evidence, so a refetch cannot invalidate prose. No article text or raw provider payload reaches the model.
 
-## Output and verification
+## Output and deterministic verification
 
-The output is JSON `{"sentences": [{"text", "evidence_ids"}]}` with 1–2 sentences, joined into at most 280 characters. The deterministic verifier rejects, and the template is kept, when:
+The output is JSON `{"sentences": [{"text", "evidence_ids"}]}` with 1–2 sentences, joined into at most 280 characters. `verify_synthesis` rejects, and the template is kept, when:
 
-- **Structure:**
-  - the output is not JSON, or has extra or missing keys;
-  - the sentence count is out of range;
-  - a sentence is empty;
-  - the summary is too long.
-- **Citations:** a sentence cites no evidence, or cites an ID absent from the input.
-- **Numbers:** a digit run is absent from the evidence (this blocks invented scores, times and counts).
-- **Disclosure:** the `Synthetic example: ` prefix of a synthetic news summary is dropped.
+- **Structure:** the output is not strict JSON or has the wrong shape; a sentence is empty; the summary is too long.
+- **Citations:** a sentence cites nothing, or cites an ID absent from the input.
+- **Numbers:** a digit run is not in the evidence.
+- **Disclosure:** the `Synthetic example: ` label is dropped.
 - **Hidden-result mode:**
-  - a `n-n` score-like pair does not appear verbatim in the evidence;
-  - outcome vocabulary (won, beat, draw, finished, …) appears that the visible evidence does not use. This check is a heuristic.
+  - a score-like pair does not appear verbatim in the evidence;
+  - outcome vocabulary appears that the evidence does not use. This check is a heuristic.
 
-Entries are verified on write and again on read. The verifier cannot prove semantic entailment or that reported qualifiers were preserved (for example, "designated for return"). The reviewed evaluation set must cover those.
+Entries are verified on write and on read.
 
 ## Cache identity
 
-The `summary_syntheses` table is created on first write with `CREATE TABLE IF NOT EXISTS`, following the repository convention. It is keyed by:
+The `summary_syntheses` table is created on first write. It is keyed by `stable_id`, the evidence fingerprint (SHA-256 of schema version plus ordered evidence), spoiler mode, language, prompt version, model ID and schema version.
 
-- `stable_id`
-- `evidence_fingerprint`: SHA-256 of the output schema version plus the ordered evidence atoms
-- `spoiler_mode`
-- `language`
-- `prompt_version`
-- `model_id`
-- `schema_version`
+## Evaluation
 
-A refetch that changes only observation or generation metadata keeps prose valid. Any change in synthesis-visible evidence misses the cache and falls back. Superseded rows are not pruned.
+**Hard gates come before preference.** A generated summary fails outright if it does any of the following:
+- adds an unsupported fact;
+- contradicts deterministic evidence;
+- leaks a hidden result;
+- drops a material qualifier;
+- drops the synthetic label;
+- cites nonexistent evidence;
+- breaks the output schema.
 
-## Evaluation fixture (proposed, not implemented)
+The verifier enforces only the lexical and structural subset. Entailment, contradiction and qualifier preservation remain **human-review and model-quality concerns**; no NLP library or second model is used. Each case therefore records both the expected verifier outcome and the expected hard-gate outcome. The report lists "verifier blind spots": cases the verifier accepts but that fail a hard gate.
 
-One JSON object per reviewed case:
+**Case format.** Each case has:
+- `id` and `description`;
+- `spoiler_mode`;
+- `candidate`: only fields that can reach the model. The runner fills placeholders for the rest, and the template is `candidate.summary`;
+- `generated`: the structured output with evidence citations;
+- `expected`: `verifier` accept/reject, `rejection` reason substring, `hard_gates` pass/fail and `hard_gate_note`;
+- optional `review`: `{"outcome": "better|same|worse", "reviewer", "comments"}`.
 
-```json
-{"stable_id": "...", "spoiler_mode": "hide_results", "language": "en",
- "evidence": [["baseline_summary", "..."]], "template": "...",
- "generated": {"sentences": [{"text": "...", "evidence_ids": ["..."]}]},
- "verifier": "accepted", "review": {"outcome": "better|same|worse|unsafe", "comments": "..."}}
-```
+The file pins `prompt_version`, and the runner refuses cases for any other version. The runner exits non-zero when any verifier outcome differs from its expectation.
 
-It will be added with the first real-model slice, when there are generated outputs to review.
+**Current set (22 cases).** The generated texts are **hand-authored exemplars, not model output**. They pin the gates and document blind spots; they are not evidence that a model is useful. Candidate text follows current loader templates, with names taken from the repository fixtures. Coverage:
+- **Arsenal:** upcoming, live, hidden and shown results.
+- **Texans:** upcoming game, game-status change with a `Questionable` qualifier, and a recent game in show mode.
+- **Scottie:** tee time, hidden and shown results.
+- **News:** a synthetic item with `designated for return`.
+- **Adversarial:**
+  - invented number, invented venue;
+  - significance language;
+  - home-team inference;
+  - instruction-like evidence;
+  - score leak and wording leak;
+  - unknown evidence ID and schema violation;
+  - dropped label, dropped qualifiers.
 
-## Before enabling a real model
+Limits found or inherited:
 
-- **Provider decisions:** choose the provider/model, budget, and retention/logging settings.
-- **Source rights:** confirm per-source rights to send data to an external LLM. None is established for:
-  - football-data.org;
-  - Sportradar NFL;
-  - Sportradar Golf;
-  - Wikinews CC BY 2.5 (attribution and share-alike obligations for derived prose);
-  - operator-reviewed news evidence (whose Texans source terms prohibit database storage without consent).
-- **Prompt:** write the prompt text and its version constraining output to paraphrase or compression of the supplied evidence.
-- **Generation trigger:** decide what calls `generate_cached_summary` and when (offline job or CLI; never `/timeline`).
-- **Enablement:** decide how the serving path gets its profile (currently only a `build_home_timeline` argument).
-- **Labelling:** decide whether the API should mark generated summaries.
-- **Evaluation:** build a reviewed evaluation set against templates before any user-facing enablement. Current templates are short (for example, "Arsenal FC vs Nottingham Forest FC"), so the added value of prose is unproven.
+- No Scottie LIVE candidate exists (the M5 gate is open), and Texans recent games carry no result evidence. Those cases use the nearest real shapes.
+- Arsenal's evidence has `winner: HOME_TEAM` but no separate home/away atoms. A summary that names the winner relies on the unstated "home vs away" order. Add explicit team atoms before show-mode result prose is enabled.
+- Lexical checks allow tokens already in evidence. Instruction-like provider text can therefore pass the verifier, although the template would display the same text.
+- "Reported" and "expected" qualifiers do not occur in current candidate evidence and are not covered.
+
+**Review workflow once a model exists:**
+1. Generate outputs for these cases under a fixed profile.
+2. Replace `generated` with the real outputs.
+3. Run the report.
+4. For verifier-accepted outputs, a reviewer records hard gates first, then `review.outcome` versus the template. The review judges clarity, concision, information density and usefulness for "what should I know right now?". Verbosity and style are not rewarded.
+
+Enable prose only if hard-gate failures are rare enough, and the prose is consistently better than the short templates, to justify model cost, generation latency, operational complexity, rights obligations and a new failure surface. No automated quality score or LLM judge is used.
+
+## Source-rights gate (pre-integration)
+
+External LLM transmission permission is **unresolved unless explicitly verified per source**. This applies independently to:
+- football-data.org;
+- Sportradar NFL;
+- Sportradar Golf;
+- Wikinews CC BY 2.5, whose attribution and share-alike obligations would apply to derived prose;
+- operator-reviewed news evidence (the Texans site terms prohibit database storage without consent).
+
+The synthesis boundary's technical support is not permission. A source without verified permission must keep its template.
+
+## Deferred decisions before a real model
+
+- LLM vendor and model;
+- budget;
+- credentials;
+- retries and timeouts;
+- generation trigger (offline job or CLI, never request time);
+- server profile configuration;
+- retention and logging policy;
+- generated-summary API marker;
+- Korean output and its prompt version;
+- cache cleanup;
+- explicit home/away evidence atoms;
+- per-source transmission permission;
+- a human review pass over real model outputs.
