@@ -14,7 +14,7 @@ Milestone 4 adds a deterministic, read-only Arsenal + Texans home timeline with 
 
 Milestone 5 adds bounded Scottie Scheffler PGA stroke-play ingestion, conservative tee-time candidates, and product-observed recent-result eligibility after a known finalization transition. Authenticated ingestion, persisted readback, and unchanged rerun are verified; Scottie-specific live-state evidence remains open. See [M5 setup and evidence](docs/milestone-5.md).
 
-Milestone 6 is active. The offline Texans evidence proof groups reviewed publications into developments. P2 adds a bounded licensed Wikinews archival retrieval proof for one Arsenal signing report, with normalization pinned to reviewed source content. Historical, date-only evidence remains quiet on home. Real same-development multi-document acceptance remains open; official Texans retrieval permission is unresolved. See [M6 evidence and source limits](docs/milestone-6.md).
+Milestone 6 is active. The offline Texans evidence proof groups reviewed publications into developments. P2 adds a bounded licensed Wikinews archival retrieval proof for two Arsenal reports about the same signing, with normalization pinned to reviewed source content. Historical, date-only evidence remains quiet on home. Real grouping is supported by a pinned archival pair; qualifying current news-candidate acceptance remains open; official Texans retrieval permission is unresolved. See [M6 evidence and source limits](docs/milestone-6.md).
 
 ## Run Milestone 1
 

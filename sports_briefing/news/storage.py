@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import closing
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 import sqlite3
 from typing import Any
@@ -136,6 +136,9 @@ def persist_reviewed_batch(path: Path, batch: EvidenceBatch, *, observed_at: str
             for document in sorted(
                 batch.documents,
                 key=lambda item: (
+                    _parse_timestamp(item.published_at, "news publication").date()
+                    if item.published_at is not None else date.fromisoformat(item.published_date)
+                    if item.published_date is not None else date.min,
                     _parse_timestamp(item.published_at, "news publication")
                     if item.published_at is not None else datetime.min.replace(tzinfo=timezone.utc),
                     item.canonical_url,

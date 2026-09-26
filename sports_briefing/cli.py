@@ -427,7 +427,7 @@ def _parser() -> argparse.ArgumentParser:
     import_news.add_argument("--input", type=Path, required=True)
     import_news.add_argument("--db", type=Path, required=True, help="explicit database path required")
 
-    ingest_news = subparsers.add_parser("ingest-news", help="fetch one pinned reviewed Wikinews article")
+    ingest_news = subparsers.add_parser("ingest-news", help="fetch two pinned reviewed Wikinews articles")
     ingest_news.add_argument("source", choices=("wikinews-arsenal",))
     ingest_news.add_argument("--db", type=Path, required=True, help="explicit database path required")
     ingest_news.add_argument("--timeout", type=_positive_float, default=15.0)
