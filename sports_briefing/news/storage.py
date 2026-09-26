@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS news_documents (
     title TEXT NOT NULL,
     author TEXT,
     published_at TEXT,
+    published_date TEXT,
+    source_metadata_json TEXT,
     first_observed_at TEXT NOT NULL,
     content_hash TEXT NOT NULL,
     duplicate_of_document_id INTEGER REFERENCES news_documents(id),
@@ -39,10 +41,10 @@ CREATE TABLE IF NOT EXISTS news_documents (
 CREATE TABLE IF NOT EXISTS news_topics (
     id INTEGER PRIMARY KEY,
     topic_key TEXT NOT NULL UNIQUE,
-    entity_id TEXT NOT NULL CHECK(entity_id = 'texans'),
+    entity_id TEXT NOT NULL,
     subject_key TEXT NOT NULL,
     subject_name TEXT NOT NULL,
-    action TEXT NOT NULL CHECK(action = 'placed_on_ir'),
+    action TEXT NOT NULL,
     effective_date TEXT NOT NULL,
     placement_qualifier TEXT,
     first_observed_at TEXT NOT NULL,
@@ -51,7 +53,9 @@ CREATE TABLE IF NOT EXISTS news_topics (
     material_published_at TEXT,
     material_document_id INTEGER NOT NULL REFERENCES news_documents(id),
     revision INTEGER NOT NULL CHECK(revision > 0),
-    evidence_mode TEXT NOT NULL
+    evidence_mode TEXT NOT NULL,
+    CHECK((entity_id = 'texans' AND action = 'placed_on_ir') OR
+          (entity_id = 'arsenal' AND action = 'signing_announced'))
 );
 CREATE TABLE IF NOT EXISTS news_topic_documents (
     topic_id INTEGER NOT NULL REFERENCES news_topics(id),
@@ -72,8 +76,48 @@ CREATE UNIQUE INDEX IF NOT EXISTS news_documents_external_id_idx
 def initialize_news_database(path: Path) -> None:
     initialize_database(path)
     with closing(sqlite3.connect(path)) as connection:
-        with connection:
-            connection.executescript(NEWS_SCHEMA)
+        _upgrade_news_schema(connection)
+
+
+def _upgrade_news_schema(connection: sqlite3.Connection) -> None:
+    # Disable FK enforcement before the transaction, and rebuild the referenced
+    # table under a new name so SQLite does not rewrite child FK definitions.
+    connection.execute("PRAGMA foreign_keys = OFF")
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(news_documents)")}
+        topic_row = connection.execute("SELECT sql FROM sqlite_master WHERE name = 'news_topics'").fetchone()
+        needs_topics = topic_row is not None and "signing_announced" not in topic_row[0]
+        for statement in NEWS_SCHEMA.split(";"):
+            sql = statement.strip()
+            if sql and not (needs_topics and "CREATE INDEX IF NOT EXISTS news_topics_entity_changed_idx" in sql):
+                connection.execute(sql)
+        if not columns:
+            columns = {row[1] for row in connection.execute("PRAGMA table_info(news_documents)")}
+        if "published_date" not in columns:
+            connection.execute("ALTER TABLE news_documents ADD COLUMN published_date TEXT")
+        if "source_metadata_json" not in columns:
+            connection.execute("ALTER TABLE news_documents ADD COLUMN source_metadata_json TEXT")
+        if needs_topics:
+            start = NEWS_SCHEMA.index("CREATE TABLE IF NOT EXISTS news_topics (")
+            end = NEWS_SCHEMA.index("CREATE TABLE IF NOT EXISTS news_topic_documents", start)
+            create_sql = NEWS_SCHEMA[start:end].replace(
+                "CREATE TABLE IF NOT EXISTS news_topics", "CREATE TABLE news_topics_replacement"
+            ).strip()
+            connection.execute(create_sql)
+            columns_sql = ", ".join(row[1] for row in connection.execute("PRAGMA table_info(news_topics)"))
+            connection.execute(f"INSERT INTO news_topics_replacement ({columns_sql}) SELECT {columns_sql} FROM news_topics")
+            connection.execute("DROP TABLE news_topics")
+            connection.execute("ALTER TABLE news_topics_replacement RENAME TO news_topics")
+            connection.execute("CREATE INDEX news_topics_entity_changed_idx ON news_topics(entity_id, meaningful_changed_at)")
+        if connection.execute("PRAGMA foreign_key_check").fetchone() is not None:
+            raise StorageError("news schema migration foreign key check failed")
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.execute("PRAGMA foreign_keys = ON")
 
 
 def persist_reviewed_batch(path: Path, batch: EvidenceBatch, *, observed_at: str) -> dict[str, int]:
@@ -88,7 +132,7 @@ def persist_reviewed_batch(path: Path, batch: EvidenceBatch, *, observed_at: str
         connection.execute("PRAGMA foreign_keys = ON")
         with connection:
             connection.execute("BEGIN IMMEDIATE")
-            source_id = _source(connection, batch.mode)
+            source_id = _source(connection, batch.mode, batch.source)
             for document in sorted(
                 batch.documents,
                 key=lambda item: (
@@ -99,6 +143,8 @@ def persist_reviewed_batch(path: Path, batch: EvidenceBatch, *, observed_at: str
             ):
                 if document.published_at is not None and _parse_timestamp(document.published_at, "news publication") > observation:
                     raise StorageError("publication time cannot follow evidence observation")
+                if document.published_date is not None and document.published_date > observation.date().isoformat():
+                    raise StorageError("publication date cannot follow evidence observation")
                 existing = connection.execute(
                     "SELECT * FROM news_documents WHERE canonical_url = ?", (document.canonical_url,)
                 ).fetchone()
@@ -122,11 +168,13 @@ def persist_reviewed_batch(path: Path, batch: EvidenceBatch, *, observed_at: str
                 cursor = connection.execute(
                     """INSERT INTO news_documents (
                         source_id, canonical_url, external_id, title, author, published_at,
+                        published_date, source_metadata_json,
                         first_observed_at, content_hash, duplicate_of_document_id, topic_key,
                         subject_key, subject_name, effective_date, placement_qualifier
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (source_id, document.canonical_url, document.external_id, document.title,
-                     document.author, document.published_at, stamp, document.content_hash,
+                     document.author, document.published_at, document.published_date,
+                     document.source_metadata_json, stamp, document.content_hash,
                      duplicate_id, document.topic_key, document.subject_key,
                      document.subject_name, document.effective_date, document.placement_qualifier),
                 )
@@ -138,7 +186,17 @@ def persist_reviewed_batch(path: Path, batch: EvidenceBatch, *, observed_at: str
     return counts
 
 
-def _source(connection: sqlite3.Connection, mode: str) -> int:
+def _source(connection: sqlite3.Connection, mode: str, source: str) -> int:
+    if source == "wikinews" and mode == "live-reviewed":
+        key = "wikinews-community:live-reviewed"
+        connection.execute(
+            "INSERT OR IGNORE INTO news_sources (source_key, name, base_url, source_kind, evidence_mode) "
+            "VALUES (?, ?, ?, 'community_reporting', ?)",
+            (key, "Wikinews contributors", "https://en.wikinews.org", mode),
+        )
+        return connection.execute("SELECT id FROM news_sources WHERE source_key = ?", (key,)).fetchone()[0]
+    if source != "texans" or mode not in {"synthetic", "reviewed"}:
+        raise StorageError("unsupported news source and evidence mode")
     key = f"houston-texans-official:{mode}"
     name = "Synthetic Texans evidence" if mode == "synthetic" else "Houston Texans"
     connection.execute(
@@ -158,6 +216,8 @@ def _check_existing_document(
         "title": document.title,
         "author": document.author,
         "published_at": document.published_at,
+        "published_date": document.published_date,
+        "source_metadata_json": document.source_metadata_json,
         "content_hash": document.content_hash,
         "topic_key": document.topic_key,
         "subject_key": document.subject_key,
@@ -182,8 +242,9 @@ def _apply_document(
                 topic_key, entity_id, subject_key, subject_name, action, effective_date,
                 placement_qualifier, first_observed_at, last_evidence_observed_at,
                 meaningful_changed_at, material_published_at, material_document_id, revision, evidence_mode
-            ) VALUES (?, 'texans', ?, ?, 'placed_on_ir', ?, ?, ?, ?, ?, ?, ?, 1, ?)""",
-            (document.topic_key, document.subject_key, document.subject_name,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)""",
+            (document.topic_key, document.entity_id, document.subject_key, document.subject_name,
+             document.action,
              document.effective_date, document.placement_qualifier, observed_at, observed_at,
              observed_at, document.published_at, document_id, mode),
         )
@@ -191,7 +252,7 @@ def _apply_document(
         counts["topics_inserted"] += 1
         contributed_placement, contributed_qualifier = 1, int(document.placement_qualifier is not None)
     else:
-        if topic["evidence_mode"] != mode or topic["subject_name"] != document.subject_name:
+        if topic["evidence_mode"] != mode or topic["subject_name"] != document.subject_name or topic["entity_id"] != document.entity_id or topic["action"] != document.action:
             raise StorageError("conflicting topic identity or evidence mode")
         if _parse_timestamp(observed_at, "news observation") < _parse_timestamp(topic["last_evidence_observed_at"], "stored observation"):
             raise StorageError("out-of-order evidence observation is unsupported")

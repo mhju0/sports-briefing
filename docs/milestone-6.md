@@ -1,4 +1,4 @@
-# Milestone 6: reviewed Texans development evidence (P1 offline proof)
+# Milestone 6: provenance-first developments
 
 M6's first slice proves that several publications can support one Texans roster development while the timeline changes only when a reviewed normalized fact changes. It does not fetch official articles automatically. The current proof is deliberately narrow: Houston Texans, `placed_on_ir`, an explicit stable player key, an effective date, and the optional exact placement qualifier `designated_for_return`. The qualifier means **Reserve/Injured (Designated for Return) at placement**, not a later return-to-practice window. Omission means unknown, not false. No LLM extracts facts, merges topics, or ranks items.
 
@@ -46,3 +46,60 @@ Eighteen focused M6 tests and 136 complete offline tests pass. They cover exact 
 In a separate local smoke check, the proof was run against a **copy** of the existing SQLite database. Two synthetic documents produced one topic and two evidence links at revision 1; an identical import left every news row unchanged. A third synthetic clarification produced the same topic at revision 2 with three evidence links; another identical import again left all rows unchanged. Every row in the 12 preexisting structured tables stayed byte-equivalent. Separate-process CLI output was stable, and loopback HTTP returned one synthetically labeled item with no result payload in either spoiler mode. These are offline product tests, not authenticated official news ingestion.
 
 Independent persistence review found and corrected fractional-second string ordering and inconsistent multi-table inspection during concurrent writes. Chronology now uses parsed timestamps; inspection uses a SQLite read snapshot. Regression tests include an interleaved WAL writer, fractional timestamps, malformed evidence mode, and database filenames containing URI-special characters. No generic framework was added.
+
+
+## P2 source investigation (2026-09-26)
+
+Baseline: `main` at `8b90305e4c1fb2c2a4baaa7079b33418ca19bfaf`, clean; 136 offline tests rerun successfully. This section records a separate permitted-source proof, not retroactive live acceptance of the synthetic P1 scenarios.
+
+| Candidate | Observed | Documented access/storage | Decision |
+| --- | --- | --- | --- |
+| Sportradar AP NFL Editorial v3 | Existing key: `GET /content-nfl-t3/ap/news/2026/09/25/all.json` returned 403 HTML Authentication Error at 12:21:36 UTC. Same-key NFL v7 schedule control returned 200. No editorial JSON obtained. | Separate Editorial product with daily news manifests, IDs, original publication and entity references. Trial restrictions and contracted product/property scope require checking intended retention/display rights. | Not currently accessible; 403 alone does not identify the account cause. Sports-data entitlement is not Editorial entitlement. |
+| SportsDataIO NFL/Golf RotoBaller News | No configured credential; no authenticated payload obtained. | Documented team/date news routes, NewsID, publication/source/URL fields. Trial is scrambled; real feed provisioning and licensed storage scope must be confirmed. | Credible next current-source access candidate, not approved or integrated. |
+| Guardian Open Platform | Official access/legal pages available; no configured API key and no authenticated article request. | Developer access: noncommercial, 1 request/second, 500/day. Default terms restrict aggregation and require 24-hour replacement/deletion. | Default developer access does not establish permission for this retained topic-analysis proof. |
+| Wikinews MediaWiki API | Three bounded discovery/content requests returned JSON. Two Arsenal articles contained stable page/revision IDs, canonical URLs, date templates, publication/archive markers and text. | Article text from 2005–2024 is CC BY 2.5, with Wikinews attribution. Copying/adaptation permitted subject to license. Images and external linked articles have separate rights. | Select one reviewed Arsenal signing article for a bounded archival proof. Archive age is not a permission failure; it must remain quiet on home. |
+
+Primary access references: [Sportradar Editorial News](https://developer.sportradar.com/images-and-editorials/reference/editorial-news), [Editorial overview](https://developer.sportradar.com/images-and-editorials/reference/editorial-overview), [Sportradar terms](https://developer.sportradar.com/sportradar-updates/page/master-terms-and-conditions-for-non-betting-services), [SportsDataIO NFL API](https://sportsdata.io/developers/api-documentation/nfl), [NFL dictionary](https://sportsdata.io/developers/data-dictionary/nfl), [SportsDataIO licensing](https://sportsdata.io/help/data-rights-and-licensing-questions), [trial limitations](https://sportsdata.io/developers), [Guardian access](https://open-platform.theguardian.com/access/), [Guardian terms](https://www.theguardian.com/open-platform/terms-and-conditions), [Wikinews copyright policy](https://en.wikinews.org/wiki/Wikinews:Copyright), [CC BY 2.5](https://creativecommons.org/licenses/by/2.5/), [MediaWiki API etiquette](https://www.mediawiki.org/wiki/API:Etiquette).
+
+No account/product was activated, purchased or changed. No sales/support message was sent. Sportradar's control request was read-only and does not close M3. No Golf request or M5 acceptance work occurred.
+
+## P2 selected evidence and precision
+
+Selected publication: [Arsenal signs Mönchengladbach captain Granit Xhaka](https://en.wikinews.org/wiki/Arsenal_signs_M%C3%B6nchengladbach_captain_Granit_Xhaka), Wikinews page `2790899`, observed revision `5024729`. Its article date is **2016-05-25**; its revision timestamp is **2026-05-04T03:20:02Z**. Those are different facts. The announcement date is not the contract commencement date (July 1). The other observed article, page `2802062`, concerned Bellerín's separate contract extension and was not selected for ingestion. Neither linked Arsenal nor Borussia source pages count as fetched evidence.
+
+The source is community reporting, not Arsenal's official statement surface. Text attribution is **Wikinews**, under **CC BY 2.5**. The proof uses explicit reviewed normalization bound to the actual fetched article identity and content; it is not automatic arbitrary-article extraction. Only the allowlisted article is fetched; no broad search, pagination, images or linked-source retrieval occurs in the adapter. Unexpected source changes must fail before persistence rather than silently reuse stale reviewed facts.
+
+Wikinews is archived/read-only following its [May 2026 closure](https://en.wikinews.org/wiki/Wikinews:Closure_of_Wikinews). It is a legitimate real retrieval/storage proof, not an ongoing timely sports-news service. A date-only publication is retained as a date with `published_at` absent. Revision time is provenance only. No midnight timestamp, backdated observation or artificial home freshness is created.
+
+## P2 acceptance boundary
+
+One live publication can prove retrieval, provenance, persistence and identical-refetch behavior. It cannot prove two real publications describe the same development. Existing repeat/follow-up scenarios remain clearly synthetic. M6 cannot be closed on this single-document archival proof alone: the minimum remaining acceptance is a permitted real same-development pair, with timestamp precision sufficient to exercise qualifying candidate behavior honestly. This may use a separately authorized current vendor feed; it does not require a broad news platform. M3/M5 gates remain unchanged and M7 is not started.
+
+
+## Run the bounded archival adapter
+
+```sh
+python3 -m sports_briefing ingest-news wikinews-arsenal --db /tmp/sports-briefing-wikinews.sqlite3
+python3 -m sports_briefing inspect news --db /tmp/sports-briefing-wikinews.sqlite3
+python3 -m sports_briefing ingest-news wikinews-arsenal --db /tmp/sports-briefing-wikinews.sqlite3
+python3 -m sports_briefing timeline --db /tmp/sports-briefing-wikinews.sqlite3
+```
+
+The public API needs no credential. Each explicit ingestion performs one bounded request for page `2790899`; no background polling or continuation is used. The adapter accepts the reviewed revision `5024729` and exact main-slot content hash. New revisions/content require a new explicit review, not silent fact reuse. Provider errors, malformed responses and mismatches stop before persistence. `inspect news` is an alias for the existing news inspection surface; `inspect texans-news` and offline imports continue to work.
+
+The schema remains four news tables. Two nullable document columns retain date-only publication and source metadata. The topic constraint admits exactly Texans IR placements and Arsenal signing announcements; no universal event ontology was added. The migration preserves existing topic/document IDs and evidence links. Source metadata retains article/revision identity, edit time, reviewed hash, license, attribution and normalization notice. Article text is used for binding/hash verification and is not retained in SQLite. The attributed captured fixture does retain the selected source text needed for regression verification.
+
+`synthetic` remains useful import-origin metadata and a safety boundary: it is visibly labeled and cannot target the CLI default database. Reviewed factual normalization remains distinct from source authority or permission. The real adapter's source identifies Wikinews community reporting; it cannot masquerade as the official Texans import. No generic source registry or claims model was added. The shared ranker and its caps remain unchanged; the archived date-only article is ineligible under the existing precise-publication freshness guard.
+
+
+## P2 verification snapshot
+
+On 2026-09-26, the implemented command fetched the selected public API page twice successfully (HTTP 200 required by the adapter). First accepted observation: `2026-09-26T12:34:36.429720Z`. The first run inserted **1 source, 1 document, 1 topic at revision 1, 1 evidence link**. The second run reported one unchanged document, zero inserts/updates/links; a separate-process inspection compared **every news row equal**, including first observation, meaningful-change time and revision. This is real network retrieval of historical content, not a current-news publication or multi-document example.
+
+Persisted publication: `published_at=NULL`, `published_date=2016-05-25`; source revision: `2026-05-04T03:20:02Z`. Accepted topic identity: `arsenal:signing_announced:player:granit-xhaka:2016-05-25`. Content SHA-256 and exact main-slot binding hash, canonical/revision URLs, attribution/license and normalization notice survived readback. The legacy evidence-link column `contributed_placement` is retained for compatibility: value 1 records the initial normalized action contribution (the signing announcement in this proof), not an IR claim. No qualifier is populated for Arsenal.
+
+Validation used `/tmp/m6p2-live.sqlite3`, a SQLite backup copy of the existing application database. All rows in its **12 preexisting structured tables** stayed equal, and the original application's database remained untouched. Repeated CLI timeline output at a fixed evaluation time was byte-identical with zero items. Loopback HTTP `/timeline` returned 200 and zero items for both hidden/revealed result modes. The old article correctly produced no news candidate; this does not prove an eligible live-news candidate.
+
+Offline verification: **8 P2 / 26 combined M6 / 144 complete tests passed**. Tests cover pinned live-shaped parsing, identity/hash/revision mismatch, date precision, attribution, bounded/error responses, persistence/rerun, old-source suppression, CLI inspection, structured isolation, legacy IDs/duplicate/evidence-link migration, and migration rollback on invalid references. Existing P1 synthetic duplicate/repeat/follow-up and candidate tests remain green. Compile and whitespace checks passed. No network is used by the suite. Source investigation used three bounded Wikinews API queries, one Sportradar Editorial request and one NFL control; implementation validation added two one-page Wikinews requests. No archive crawl, linked-source retrieval or scheduled polling occurred.
+
+**M6 REMAINS OPEN — permitted real same-development grouping and qualifying news-candidate acceptance remain unverified.** P2's licensed archival fetch/persist/idempotency subset is verified. The next slice should obtain a permitted pair of real publications about one development with adequate publication metadata, then reuse this persistence/ranking boundary. No new provider framework or M7 work is needed first.

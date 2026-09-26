@@ -24,16 +24,21 @@ class ReviewedDocument:
     subject_name: str
     effective_date: str
     placement_qualifier: str | None
+    published_date: str | None = None
+    source_metadata_json: str | None = None
+    entity_id: str = "texans"
+    action: str = "placed_on_ir"
 
     @property
     def topic_key(self) -> str:
-        return f"texans:placed_on_ir:{self.subject_key}:{self.effective_date}"
+        return f"{self.entity_id}:{self.action}:{self.subject_key}:{self.effective_date}"
 
 
 @dataclass(frozen=True)
 class EvidenceBatch:
     mode: str
     documents: tuple[ReviewedDocument, ...]
+    source: str = "texans"
 
 
 def normalize_batch(value: object) -> EvidenceBatch:

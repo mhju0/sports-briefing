@@ -1,0 +1,110 @@
+{
+  "batchcomplete": true,
+  "query": {
+    "pages": [
+      {
+        "pageid": 2790899,
+        "ns": 0,
+        "title": "Arsenal signs Mönchengladbach captain Granit Xhaka",
+        "contentmodel": "wikitext",
+        "pagelanguage": "en",
+        "pagelanguagehtmlcode": "en",
+        "pagelanguagedir": "ltr",
+        "touched": "2026-05-04T03:20:02Z",
+        "lastrevid": 5024729,
+        "length": 2696,
+        "fullurl": "https://en.wikinews.org/wiki/Arsenal_signs_M%C3%B6nchengladbach_captain_Granit_Xhaka",
+        "editurl": "https://en.wikinews.org/w/index.php?title=Arsenal_signs_M%C3%B6nchengladbach_captain_Granit_Xhaka&action=edit",
+        "canonicalurl": "https://en.wikinews.org/wiki/Arsenal_signs_M%C3%B6nchengladbach_captain_Granit_Xhaka",
+        "revisions": [
+          {
+            "revid": 5024729,
+            "parentid": 5009811,
+            "timestamp": "2026-05-04T03:20:02Z",
+            "slots": {
+              "main": {
+                "contentmodel": "wikitext",
+                "contentformat": "text/x-wiki",
+                "content": "{{date|May 25, 2016}}\n{{Arsenal F.C.}}\n\nToday<!-- On Wednesday-->, [[London]]-based [[Football (soccer)|football]] club [[Arsenal F.C.|Arsenal]] announced signing 23-year-old [[Switzerland|Swiss]] midfielder {{w|Granit Xhaka}} from [[Germany|German]] club {{w|Borussia Mönchengladbach}}. The Swiss international has made 41 appearances for Switzerland and joined the German side from {{w|FC Basel}}, his childhood club, in 2012.\n[[File:Granit Xhaka - Switzerland vs. Argentina, 29th February 2012 (cropped).jpg|File photo of Granit Xhaka {{image|Fanny Schertzer}}|left|thumb]]\n{{QuoteRight|I cannot wait to move to London, represent this special club and play in the Premier League.|source=Granit Xhaka}}\nXhaka said, \"I cannot wait to move to London, represent this special club and play in the Premier League.\" Xhaka made about 140 appearances for Borussia. He captained Mönchengladbach last season when their side came fourth in the league table and qualified for the [[UEFA Champions League]]. He won two {{w|Swiss Super League}} titles with Basel. \n\nXhaka has passed his medical tests and is to join ''The Gunners'' after the {{w|Euro 2016}} tournament with his contract in force from July 1. \"Granit Xhaka is an exciting young player,\" said Arsenal manager [[Arsène Wenger]], \"already with good Champions League and Bundesliga experience.\" Borussia's sporting director {{w|Max Eberl}} said, {{translated quote|de|German language|Wir verlieren einen sehr, sehr guten Spieler, aber wir haben mit der erzielten Ablösesumme die Möglichkeit, unsere Mannschaft weiter sinnvoll zu ergänzen|We’re losing a very, very good player, but the agreed transfer fee provides us with the opportunity to make sensible additions to our squad}}.\n\nXhaka's transfer fee was not disclosed.\n\n{{haveyoursay}}\n== Sources == \n\n*{{source\n|url=http://www.arsenal.com/news/news-archive/20160523/arsenal-agree-deal-with-granit-xhaka\n|title=Arsenal agree deal with Granit Xhaka\n|author=\n|pub=Arsenal\n|date=May 25, 2016\n}}\n*{{source\n|url=http://www.borussia.de/de/aktuelles-termine/news/borussia-news/news-detailansicht.html?tx_ttnews%5Btt_news%5D=17675&cHash=0002fde56cd74f9189bb105824220456\n<!-- en version is here: http://www.borussia.de/english/team/news/borussia-news/news-detailansicht.html?tx_ttnews%5Btt_news%5D=17677&cHash=ee709261bf322a6310357a347378c7ba -->\n|title=Xhaka wechselt zu Arsenal London\n|author=\n|lang=de\n|pub=Borussia Mönchengladbach\n|date=May 25, 2016\n}}\n\n{{Publish}}\n{{Archived-cc-2.5}}\n\n[[CAT:London]]\n[[CAT:England]]\n[[CAT:Football (soccer)]]\n[[CAT:Sports]]\n[[CAT:Arsenal F.C.]]\n[[CAT:Germany]]\n[[CAT:Switzerland]]\n[[CAT:Europe]]\n[[CAT:Arsène Wenger]]\n[[Category:Acagastya (Wikinewsie)]]"
+              }
+            }
+          }
+        ],
+        "categories": [
+          {
+            "ns": 14,
+            "title": "Category:Acagastya (Wikinewsie)"
+          },
+          {
+            "ns": 14,
+            "title": "Category:Archived"
+          },
+          {
+            "ns": 14,
+            "title": "Category:Arsenal F.C."
+          },
+          {
+            "ns": 14,
+            "title": "Category:Arsène Wenger"
+          },
+          {
+            "ns": 14,
+            "title": "Category:Articles not disputed"
+          },
+          {
+            "ns": 14,
+            "title": "Category:England"
+          },
+          {
+            "ns": 14,
+            "title": "Category:Europe"
+          },
+          {
+            "ns": 14,
+            "title": "Category:Football (soccer)"
+          },
+          {
+            "ns": 14,
+            "title": "Category:Germany"
+          },
+          {
+            "ns": 14,
+            "title": "Category:London"
+          },
+          {
+            "ns": 14,
+            "title": "Category:May 25, 2016"
+          },
+          {
+            "ns": 14,
+            "title": "Category:News articles with translated quotes"
+          },
+          {
+            "ns": 14,
+            "title": "Category:Pages using three-parameter languageicon"
+          },
+          {
+            "ns": 14,
+            "title": "Category:Pages with defaulting non-local links"
+          },
+          {
+            "ns": 14,
+            "title": "Category:Pages with pull-quotes"
+          },
+          {
+            "ns": 14,
+            "title": "Category:Published"
+          },
+          {
+            "ns": 14,
+            "title": "Category:Sports"
+          },
+          {
+            "ns": 14,
+            "title": "Category:Switzerland"
+          }
+        ]
+      }
+    ]
+  }
+}

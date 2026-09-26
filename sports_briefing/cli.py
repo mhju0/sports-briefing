@@ -49,6 +49,7 @@ from .golf.sportradar import ProviderError as GolfProviderError, NormalizationEr
 from .golf.storage import initialize_golf_database, persist_golf_fetch, inspect_golf_state
 from .news.evidence import EvidenceError, load_batch
 from .news.storage import inspect_news_state, persist_reviewed_batch
+from .news.wikinews import fetch_article
 
 
 LOGGER = logging.getLogger("sports_briefing")
@@ -69,6 +70,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             result = {"entity": "texans", "evidence_mode": batch.mode,
                       "outcomes": persist_reviewed_batch(args.db, batch, observed_at=_now())}
             LOGGER.info("news_import_complete mode=%s outcomes=%s", batch.mode, result["outcomes"])
+        elif args.command == "ingest-news":
+            batch = fetch_article(timeout=args.timeout)
+            result = {"entity": "arsenal", "source": "wikinews", "evidence_mode": batch.mode,
+                      "outcomes": persist_reviewed_batch(args.db, batch, observed_at=_now())}
+            LOGGER.info("news_ingest_complete source=wikinews outcomes=%s", result["outcomes"])
         elif args.command == "briefing":
             if args.entity == "arsenal":
                 result = build_arsenal_briefing(
@@ -413,13 +419,18 @@ def _parser() -> argparse.ArgumentParser:
     briefing.add_argument("--hide-results", action="store_true")
 
     inspect = subparsers.add_parser("inspect", help="inspect normalized persisted state")
-    inspect.add_argument("entity", choices=("arsenal", "texans", "scheffler", "texans-news"))
+    inspect.add_argument("entity", choices=("arsenal", "texans", "scheffler", "texans-news", "news"))
     inspect.add_argument("--db", type=Path, default=DEFAULT_DATABASE)
 
     import_news = subparsers.add_parser("import-news", help="import manually reviewed Texans evidence JSON")
     import_news.add_argument("entity", choices=("texans",))
     import_news.add_argument("--input", type=Path, required=True)
     import_news.add_argument("--db", type=Path, required=True, help="explicit database path required")
+
+    ingest_news = subparsers.add_parser("ingest-news", help="fetch one pinned reviewed Wikinews article")
+    ingest_news.add_argument("source", choices=("wikinews-arsenal",))
+    ingest_news.add_argument("--db", type=Path, required=True, help="explicit database path required")
+    ingest_news.add_argument("--timeout", type=_positive_float, default=15.0)
 
     timeline = subparsers.add_parser(
         "timeline", help="derive the ranked Arsenal + Texans + Scottie home timeline"

@@ -6,7 +6,7 @@ Meaningful, source-backed changes take priority over volume. A followed entity c
 
 ## Status
 
-Milestone 1 is complete and live-verified: a **Python/SQLite Arsenal fixture/result pipeline** and deterministic CLI briefing. Milestone 2 adds a local FastAPI read endpoint and a minimal SwiftUI iPhone screen; see its [setup and verification](docs/milestone-2.md). Arsenal coverage supports only Premier League and UEFA Champions League. FA Cup, EFL Cup, other Arsenal competitions, Arsenal injuries, news and reporter material remain unsupported.
+Milestone 1 is complete and live-verified: a **Python/SQLite Arsenal fixture/result pipeline** and deterministic CLI briefing. Milestone 2 adds a local FastAPI read endpoint and a minimal SwiftUI iPhone screen; see its [setup and verification](docs/milestone-2.md). Arsenal coverage supports only Premier League and UEFA Champions League. FA Cup, EFL Cup, other Arsenal competitions, Arsenal injuries and current news/reporter feeds remain unsupported; M6 has a separate archival news proof.
 
 Milestone 3 adds a separate Texans schedule and practice/status-change pipeline. Its Sportradar integration is provisional and **awaiting authenticated provider verification**; see [M3 setup and limitations](docs/milestone-3.md). The iPhone app remains Arsenal-only.
 
@@ -14,7 +14,7 @@ Milestone 4 adds a deterministic, read-only Arsenal + Texans home timeline with 
 
 Milestone 5 adds bounded Scottie Scheffler PGA stroke-play ingestion, conservative tee-time candidates, and product-observed recent-result eligibility after a known finalization transition. Authenticated ingestion, persisted readback, and unchanged rerun are verified; Scottie-specific live-state evidence remains open. See [M5 setup and evidence](docs/milestone-5.md).
 
-Milestone 6 is active. Its first proof accepts **manually reviewed, explicitly authorized Texans transaction evidence** from JSON and groups documents into one provenance-preserving development. Automated official-source retrieval remains gated by source-use terms. The offline proof and its limits are in [M6 development evidence](docs/milestone-6.md).
+Milestone 6 is active. The offline Texans evidence proof groups reviewed publications into developments. P2 adds a bounded licensed Wikinews archival retrieval proof for one Arsenal signing report, with normalization pinned to reviewed source content. Historical, date-only evidence remains quiet on home. Real same-development multi-document acceptance remains open; official Texans retrieval permission is unresolved. See [M6 evidence and source limits](docs/milestone-6.md).
 
 ## Run Milestone 1
 
@@ -40,8 +40,8 @@ M1 ingestion/CLI use only the Python standard library. For the complete test sui
 - [Milestone 3 setup](docs/milestone-3.md): Texans ingestion, change history and provider-verification gate
 - [Milestone 4 setup](docs/milestone-4.md): cross-sport candidates, ranking, timeline CLI/API and limits
 - [Milestone 5 setup](docs/milestone-5.md): Scottie Golf ingestion, source clocks, tee-time and observed-result candidates, and the remaining LIVE gate
-- [Milestone 6 development evidence](docs/milestone-6.md): narrow Texans reviewed-document import, topic grouping, freshness, and open source-access gate
+- [Milestone 6 development evidence](docs/milestone-6.md): Texans reviewed import, Wikinews archival proof, provenance, freshness, and remaining acceptance
 
 This is a separate repository from FullCourt. No FullCourt code is copied.
 
-Matt Pocock's existing user-level skills are available; no new skills were installed. Milestone tracking uses local Markdown under `.scratch/`, with the convention in [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md). No external tracker is configured.
+Matt Pocock's existing user-level skills are available; no new skills were installed. The canonical current roadmap is [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md); detailed historical records also exist under `.scratch/`. No external tracker is configured.
