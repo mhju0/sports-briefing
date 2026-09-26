@@ -102,6 +102,7 @@ def build_home_timeline(
     from .arsenal_timeline import load_arsenal_timeline_candidates
     from .nfl.timeline import load_texans_timeline_candidates
     from .golf.timeline import load_golf_timeline_candidates
+    from .news.timeline import load_news_timeline_candidates
 
     candidates: list[TimelineCandidate] = []
     unavailable: list[str] = []
@@ -117,6 +118,9 @@ def build_home_timeline(
                 unavailable.append(entity_id)
                 continue
             raise
+    candidates.extend(load_news_timeline_candidates(database, evaluation_time, hide_results=hide_results))
+    if any(item.entity_id == "texans" for item in candidates) and "texans" in unavailable:
+        unavailable.remove("texans")
     ranked = rank_candidates(
         candidates,
         as_of=evaluation_time,

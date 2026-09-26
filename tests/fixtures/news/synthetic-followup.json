@@ -1,0 +1,18 @@
+{
+  "evidence_mode": "synthetic",
+  "documents": [
+    {
+      "canonical_url": "https://example.test/news/sample-placement-followup",
+      "external_id": "synthetic-doc-3",
+      "title": "Sample Texans transaction clarified",
+      "author": "Synthetic test desk",
+      "published_at": "2026-09-25T12:00:00Z",
+      "text": "Sample Player's Reserve/Injured placement was designated for return.",
+      "subject_key": "player:sample-player",
+      "subject_name": "Sample Player",
+      "action": "placed_on_ir",
+      "effective_date": "2026-09-25",
+      "placement_qualifier": "designated_for_return"
+    }
+  ]
+}

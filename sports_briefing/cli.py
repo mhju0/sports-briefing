@@ -47,6 +47,8 @@ from .nfl.storage import (
 )
 from .golf.sportradar import ProviderError as GolfProviderError, NormalizationError as GolfNormalizationError, retrieve_scottie
 from .golf.storage import initialize_golf_database, persist_golf_fetch, inspect_golf_state
+from .news.evidence import EvidenceError, load_batch
+from .news.storage import inspect_news_state, persist_reviewed_batch
 
 
 LOGGER = logging.getLogger("sports_briefing")
@@ -60,6 +62,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         if args.command == "ingest":
             result = _ingest_arsenal(args) if args.entity == "arsenal" else _ingest_texans(args) if args.entity == "texans" else _ingest_scheffler(args)
+        elif args.command == "import-news":
+            batch = load_batch(str(args.input))
+            if batch.mode == "synthetic" and args.db.resolve() == DEFAULT_DATABASE.resolve():
+                raise ValueError("synthetic evidence requires an isolated database, not the default database")
+            result = {"entity": "texans", "evidence_mode": batch.mode,
+                      "outcomes": persist_reviewed_batch(args.db, batch, observed_at=_now())}
+            LOGGER.info("news_import_complete mode=%s outcomes=%s", batch.mode, result["outcomes"])
         elif args.command == "briefing":
             if args.entity == "arsenal":
                 result = build_arsenal_briefing(
@@ -84,7 +93,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 len(result["items"]),
             )
         else:
-            result = inspect_state(args.db) if args.entity == "arsenal" else inspect_texans_state(args.db) if args.entity == "texans" else inspect_golf_state(args.db)
+            result = inspect_state(args.db) if args.entity == "arsenal" else inspect_texans_state(args.db) if args.entity == "texans" else inspect_golf_state(args.db) if args.entity == "scheffler" else inspect_news_state(args.db)
     except (
         ProviderError,
         NFLProviderError,
@@ -92,6 +101,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         NFLNormalizationError,
         GolfProviderError,
         GolfNormalizationError,
+        EvidenceError,
         StorageError,
         BriefingError,
         TimelineError,
@@ -403,8 +413,13 @@ def _parser() -> argparse.ArgumentParser:
     briefing.add_argument("--hide-results", action="store_true")
 
     inspect = subparsers.add_parser("inspect", help="inspect normalized persisted state")
-    inspect.add_argument("entity", choices=("arsenal", "texans", "scheffler"))
+    inspect.add_argument("entity", choices=("arsenal", "texans", "scheffler", "texans-news"))
     inspect.add_argument("--db", type=Path, default=DEFAULT_DATABASE)
+
+    import_news = subparsers.add_parser("import-news", help="import manually reviewed Texans evidence JSON")
+    import_news.add_argument("entity", choices=("texans",))
+    import_news.add_argument("--input", type=Path, required=True)
+    import_news.add_argument("--db", type=Path, required=True, help="explicit database path required")
 
     timeline = subparsers.add_parser(
         "timeline", help="derive the ranked Arsenal + Texans + Scottie home timeline"
@@ -497,7 +512,7 @@ def _now() -> str:
 def _stage(exc: Exception) -> str:
     if isinstance(exc, (ProviderError, NFLProviderError, GolfProviderError)):
         return "provider"
-    if isinstance(exc, (NormalizationError, NFLNormalizationError, GolfNormalizationError)):
+    if isinstance(exc, (NormalizationError, NFLNormalizationError, GolfNormalizationError, EvidenceError)):
         return "normalization"
     if isinstance(exc, StorageError):
         return "persistence"

@@ -1,0 +1,18 @@
+{
+  "evidence_mode": "synthetic",
+  "documents": [
+    {
+      "canonical_url": "https://example.test/news/old-placement",
+      "external_id": "synthetic-old-doc",
+      "title": "Old sample transaction",
+      "author": "Synthetic test desk",
+      "published_at": "2026-08-01T09:00:00Z",
+      "text": "Older Sample Player was placed on Reserve/Injured.",
+      "subject_key": "player:older-sample-player",
+      "subject_name": "Older Sample Player",
+      "action": "placed_on_ir",
+      "effective_date": "2026-08-01",
+      "placement_qualifier": null
+    }
+  ]
+}

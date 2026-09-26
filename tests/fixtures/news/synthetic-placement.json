@@ -1,0 +1,31 @@
+{
+  "evidence_mode": "synthetic",
+  "documents": [
+    {
+      "canonical_url": "https://example.test/news/sample-placement",
+      "external_id": "synthetic-doc-1",
+      "title": "Sample Texans transaction",
+      "author": "Synthetic test desk",
+      "published_at": "2026-09-25T09:00:00Z",
+      "text": "Sample Player was placed on Reserve/Injured.",
+      "subject_key": "player:sample-player",
+      "subject_name": "Sample Player",
+      "action": "placed_on_ir",
+      "effective_date": "2026-09-25",
+      "placement_qualifier": null
+    },
+    {
+      "canonical_url": "https://example.test/news/sample-placement-copy",
+      "external_id": "synthetic-doc-2",
+      "title": "Sample Texans transaction",
+      "author": "Synthetic test desk",
+      "published_at": "2026-09-25T10:00:00Z",
+      "text": "Sample Player was placed on Reserve/Injured.",
+      "subject_key": "player:sample-player",
+      "subject_name": "Sample Player",
+      "action": "placed_on_ir",
+      "effective_date": "2026-09-25",
+      "placement_qualifier": null
+    }
+  ]
+}

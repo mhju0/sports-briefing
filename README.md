@@ -14,6 +14,8 @@ Milestone 4 adds a deterministic, read-only Arsenal + Texans home timeline with 
 
 Milestone 5 adds bounded Scottie Scheffler PGA stroke-play ingestion, conservative tee-time candidates, and product-observed recent-result eligibility after a known finalization transition. Authenticated ingestion, persisted readback, and unchanged rerun are verified; Scottie-specific live-state evidence remains open. See [M5 setup and evidence](docs/milestone-5.md).
 
+Milestone 6 is active. Its first proof accepts **manually reviewed, explicitly authorized Texans transaction evidence** from JSON and groups documents into one provenance-preserving development. Automated official-source retrieval remains gated by source-use terms. The offline proof and its limits are in [M6 development evidence](docs/milestone-6.md).
+
 ## Run Milestone 1
 
 Use Python 3.11+ from this directory. Export your football-data.org token as `FOOTBALL_DATA_API_KEY`; see [setup and behavior](docs/milestone-1.md) for safe credential entry, data limits and debugging.
@@ -38,6 +40,7 @@ M1 ingestion/CLI use only the Python standard library. For the complete test sui
 - [Milestone 3 setup](docs/milestone-3.md): Texans ingestion, change history and provider-verification gate
 - [Milestone 4 setup](docs/milestone-4.md): cross-sport candidates, ranking, timeline CLI/API and limits
 - [Milestone 5 setup](docs/milestone-5.md): Scottie Golf ingestion, source clocks, tee-time and observed-result candidates, and the remaining LIVE gate
+- [Milestone 6 development evidence](docs/milestone-6.md): narrow Texans reviewed-document import, topic grouping, freshness, and open source-access gate
 
 This is a separate repository from FullCourt. No FullCourt code is copied.
 
