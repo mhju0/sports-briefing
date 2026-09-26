@@ -163,3 +163,32 @@ Both articles retain `published_at=NULL` and their distinct 2016 publication dat
 All rows in **12 preexisting structured tables** matched before/after in the proof copy and original application DB. The original DB was only read. Offline verification: **11 source-adapter / 29 combined M6 / 147 complete tests pass**; compile and whitespace checks pass. New tests exercise the real-shaped pair, initial versus repeat contribution, reverse date-only ordering, source mismatch rejection before writes, restart readback and P2 document compatibility. The P2 original normalized document, including metadata JSON, remains byte-equal to the prior implementation. No new schema, dependency, fixture fabrication, network-dependent test, LLM or ranker change was introduced. Three bounded discovery requests plus two pair-validation requests were made; no Sportradar/Guardian retry or SportsDataIO API call occurred.
 
 **M6 REMAINS OPEN — permitted real current/recent news-candidate acceptance.** Real grouping is closed. Current-source access is the immediate external prerequisite; provider normalization/attribution and any required supported-topic candidate mapping remain evidence-dependent engineering work. Do not label the entire milestone implementation-complete before that work is known. The smallest next action is rights-cleared, non-scrambled team-level NFL news access with a qualifying Texans IR-development publication; this targets existing topic/candidate semantics. M3/M5 gates remain open and M7 planned only.
+
+
+## Status classification and reopen trigger (2026-09-26 audit)
+
+Audit baseline: `main`, clean at `54155759860b76da394bc8ddf197cfe4a89e943b`; 147 complete offline tests passing. No code changed.
+
+**Status: source-independent implementation complete — acceptance blocked externally.** This is not DONE.
+
+| Area | State |
+| --- | --- |
+| Engineering independent of source access | Complete: four news tables, publication/observation/meaningful-change clocks, idempotency, exact-duplicate and same-development grouping, repeat versus follow-up, atomic writes, structured isolation, the Texans IR `MEANINGFUL_CHANGE` adapter through the unchanged ranker, CLI/HTTP, and the licensed Wikinews adapter |
+| Real-source acceptance completed | Licensed archival ingestion/idempotency (P2); real same-development grouping and repeat-without-novelty (P3) |
+| Acceptance open | A permitted real current/recent development producing a qualifying deterministic candidate |
+| Remaining engineering | Source-specific only: provider normalization/attribution and, if the observed development is not a Texans IR placement, one bounded candidate mapping. It depends on real payload evidence, so the milestone is not labeled fully implementation-complete |
+| Blocker | External: permitted current/recent source access and rights, plus a qualifying development actually appearing in it |
+
+No additional generic M6 engineering is justified now. M6 is paused, not abandoned.
+
+**Reopen M6 acceptance** only when one of these becomes available:
+
+- permitted real current/recent source access with precise publication metadata and adequate retention, processing and local display rights;
+- new entitlement evidence for an already-investigated provider (Sportradar Editorial 403, Guardian default terms);
+- another source meeting the same provenance and rights requirements.
+
+SportsDataIO NFL News-by-Team (RotoBaller) remains the leading candidate, not a required vendor. Before any adapter it still needs: real non-scrambled access, a configured credential, confirmed minimal retention rights, confirmed normalization/processing rights, confirmed local display rights, known attribution obligations, post-license retention/deletion terms, and inspection of a real payload including its timestamp semantics. No provider module is added before that evidence.
+
+On reopening, validate: real source → persisted current development → deterministic qualifying `MEANINGFUL_CHANGE` candidate → CLI/HTTP timeline → idempotent rerun. Eligibility windows, tiers and the shared ranker stay unchanged.
+
+**M7 is not blocked by this gate.** M7 consumes already-ranked `TimelineCandidate` output. News candidates already reach that interface through synthetic and archival evidence, and a current source would add candidates without changing the interface.
