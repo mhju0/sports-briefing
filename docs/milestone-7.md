@@ -3,7 +3,8 @@
 M7 asks whether generated prose improves the timeline enough to justify a model, and does it without ever letting a model decide facts or ranking.
 
 - **Slice 1** built the provider-independent boundary: an optional, verified, cached replacement for one field (`summary`) on candidates that ranking has already selected.
-- **Slice 2** adds a versioned prompt contract and an offline evaluation set, so a real model can be judged before it is enabled.
+- **Slice 2** added a versioned prompt contract and an offline evaluation set, so a real model can be judged before it is enabled.
+- **Slice 3** hardened the evidence contract. Facts the domain already knew but passed only as template prose now reach synthesis as structured atoms, and the verifier checks what those atoms make checkable.
 
 ## Built
 
@@ -11,8 +12,8 @@ M7 asks whether generated prose improves the timeline enough to justify a model,
 - **Verified cache with template fallback.**
   - `apply_cached_summaries` only reads and never calls a model. A missing database, table or row, or a corrupt or incompatible row, keeps that candidate's template. Other candidates are unaffected.
   - `/timeline` and the CLI pass no synthesis profile, so their output is exactly the template output.
-- **Prompt contract.** `PROMPT_VERSION = "summary-en-v1"` and `SUMMARY_INSTRUCTIONS` in `sports_briefing/synthesis.py` are the one English contract.
-  - `build_prompt_request` returns a provider-neutral request in which evidence stays a separate data list and is never spliced into the instructions.
+- **Prompt contract.** `PROMPT_VERSION = "summary-en-v2"` and `SUMMARY_INSTRUCTIONS` in `sports_briefing/synthesis.py` are the one English contract.
+  - `build_prompt_request` returns a provider-neutral request. Evidence stays a separate list, labelled `untrusted_evidence`, and is never spliced into the instructions.
   - `SynthesisProfile.prompt_version` defaults to this version.
   - Changing the instructions requires a new version, which also invalidates cached prose.
 - **Evaluation set and runner.**
@@ -31,9 +32,13 @@ M7 asks whether generated prose improves the timeline enough to justify a model,
 
 ## Model-facing evidence
 
-`build_synthesis_input` derives local evidence IDs from the candidate: `entity_name`, `title`, `baseline_summary`, `event_state`, plus `competition` (name), `event_time` and `change_time` when present. `result` (canonical JSON) is included only in `show_results` mode.
+`build_synthesis_input` derives local evidence IDs from the candidate:
+- **Always:** `entity_name`, `title`, `baseline_summary`, `event_state`.
+- **When present:** `competition` (name), `event_time`, `change_time`.
+- **Loader facts:** the candidate's `summary_facts` (see *Slice 3* below).
+- **`show_results` mode only:** `home_score`, `away_score`, `winner` and `duration`, derived from the candidate's `result`. `winner` is resolved to a team name or `draw`.
 
-Candidates are already spoiler-filtered by their loaders, and the builder drops `result` in `hide_results` mode even if a candidate still carries one. Provenance, tier and observation times are not evidence, so a refetch cannot invalidate prose. No article text or raw provider payload reaches the model.
+Candidates are already spoiler-filtered by their loaders, and the builder ignores `result` in `hide_results` mode even if a candidate still carries one. A fact ID that would shadow candidate evidence is refused. Provenance, tier and observation times are not evidence, so a refetch cannot invalidate prose. No article text or raw provider payload reaches the model.
 
 ## Output and deterministic verification
 
@@ -43,11 +48,44 @@ The output is JSON `{"sentences": [{"text", "evidence_ids"}]}` with 1–2 senten
 - **Citations:** a sentence cites nothing, or cites an ID absent from the input.
 - **Numbers:** a digit run is not in the evidence.
 - **Disclosure:** the `Synthetic example: ` label is dropped.
-- **Hidden-result mode:**
+- **Required facts:** a `previous_status`, `new_status` or `designation` value is missing (case-insensitive whole-phrase match), or `previous_status` does not come before `new_status`.
+- **Winner:** a team other than `winner` is the subject of won/wins/beat/beats/defeated/defeats. The full name and the name without an FC/AFC affix both count.
+- **No result evidence** (hidden mode, or show mode without a structured result):
   - a score-like pair does not appear verbatim in the evidence;
   - outcome vocabulary appears that the evidence does not use. This check is a heuristic.
 
 Entries are verified on write and on read.
+
+## Slice 3: evidence contract
+
+**Ambiguity found by the slice 2 evaluation.** Of the 16 outputs the verifier accepted, 7 still broke a hard rule. Four came from the evidence contract, not the prose:
+- Arsenal evidence said `winner: HOME_TEAM` without saying which team was home.
+- Texans status transitions and the news `designated for return` qualifier existed only inside `baseline_summary`.
+- Texans recent games had no result evidence, yet show mode applied no outcome check.
+
+**Structural change.** `TimelineCandidate.summary_facts` carries the facts each loader's template already renders, taken from domain data and never parsed from prose:
+
+| Loader | Facts |
+| --- | --- |
+| Arsenal and Texans games | `home_team`, `away_team` |
+| Texans availability (newest change) | `player`; for practice/game status changes, `status_type`, `previous_status` and `new_status` when known |
+| Texans news | `player`, `effective_date`, and `designation` only when the reviewed qualifier is `designated_for_return` |
+
+These facts are not projected by the API and play no part in ranking. The prompt moved to `summary-en-v2`, so v1 cache entries are never served under the new contract.
+
+**Deterministic guarantees now:**
+- a required status or designation value survives verbatim;
+- a status transition is not reversed;
+- a listed non-winning team is never the subject of a win verb;
+- outcome words and unseen score pairs are rejected wherever no structured result exists.
+
+**Still not guaranteed:**
+- semantic entailment, and wrong-winner phrasings outside `<team> <win verb>` (for example, "were beaten by");
+- invented free-text facts such as venues;
+- significance language in show mode;
+- that a model ignored instructions embedded in evidence.
+
+Required values are matched lexically, so a paraphrase such as "did not practice" for `DNP` is rejected and falls back to the template (conservative). Golf results keep their tie, score and position only in `baseline_summary`; they are not structured facts yet. NFL storage has no score fields, so Texans results remain template-only; none were invented for synthesis.
 
 ## Cache identity
 
@@ -76,7 +114,7 @@ The verifier enforces only the lexical and structural subset. Entailment, contra
 
 The file pins `prompt_version`, and the runner refuses cases for any other version. The runner exits non-zero when any verifier outcome differs from its expectation.
 
-**Current set (22 cases).** The generated texts are **hand-authored exemplars, not model output**. They pin the gates and document blind spots; they are not evidence that a model is useful. Candidate text follows current loader templates, with names taken from the repository fixtures. Coverage:
+**Current set (24 cases).** The generated texts are **hand-authored exemplars, not model output**. They pin the gates and document blind spots; they are not evidence that a model is useful. Candidate text follows current loader templates, with names taken from the repository fixtures. Coverage:
 - **Arsenal:** upcoming, live, hidden and shown results.
 - **Texans:** upcoming game, game-status change with a `Questionable` qualifier, and a recent game in show mode.
 - **Scottie:** tee time, hidden and shown results.
@@ -84,17 +122,34 @@ The file pins `prompt_version`, and the runner refuses cases for any other versi
 - **Adversarial:**
   - invented number, invented venue;
   - significance language;
-  - home-team inference;
+  - named winner and wrong winner;
+  - reversed status transition;
   - instruction-like evidence;
   - score leak and wording leak;
   - unknown evidence ID and schema violation;
   - dropped label, dropped qualifiers.
 
+Each case changed in slice 3 records why in its `revision` field.
+
+| Evaluation | Cases | Verifier accepted | Accepted but break a hard rule | Verifier rejected |
+| --- | --- | --- | --- | --- |
+| Slice 2 (`summary-en-v1`) | 22 | 16 | 7 | 6 |
+| Slice 3 (`summary-en-v2`) | 24 | 13 | 3 | 11 |
+
+How the slice 2 blind spots were resolved:
+- **Now rejected deterministically:**
+  - dropped `Questionable → Out`;
+  - dropped `designated for return`;
+  - the invented Texans result.
+- **No longer a failure:** the winner is explicit evidence, so naming it is grounded (`arsenal-result-shown-winner-named`). The new `arsenal-result-shown-wrong-winner` case is rejected.
+- **Still review-only:**
+  - the invented venue (free text);
+  - `dominant` / title-race significance (semantic);
+  - instruction-like evidence. Its tokens are present in evidence, so obedience and paraphrase look identical to lexical checks, although the template would display the same text.
+
 Limits found or inherited:
 
-- No Scottie LIVE candidate exists (the M5 gate is open), and Texans recent games carry no result evidence. Those cases use the nearest real shapes.
-- Arsenal's evidence has `winner: HOME_TEAM` but no separate home/away atoms. A summary that names the winner relies on the unstated "home vs away" order. Add explicit team atoms before show-mode result prose is enabled.
-- Lexical checks allow tokens already in evidence. Instruction-like provider text can therefore pass the verifier, although the template would display the same text.
+- No Scottie LIVE candidate exists (the M5 gate is open), so those cases use the nearest real shapes.
 - "Reported" and "expected" qualifiers do not occur in current candidate evidence and are not covered.
 
 **Review workflow once a model exists:**
@@ -128,6 +183,6 @@ The synthesis boundary's technical support is not permission. A source without v
 - generated-summary API marker;
 - Korean output and its prompt version;
 - cache cleanup;
-- explicit home/away evidence atoms;
+- structured Golf result facts (tie, score, position), if Golf result prose is wanted;
 - per-source transmission permission;
 - a human review pass over real model outputs.

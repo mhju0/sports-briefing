@@ -56,6 +56,9 @@ class TimelineCandidate:
     source_record_id: str
     result_hidden: bool = False
     result: dict[str, Any] | None = None
+    # Structured facts that the summary template renders, as (fact_id, value).
+    # Synthesis evidence only: never projected, never used for ranking.
+    summary_facts: tuple[tuple[str, str], ...] = ()
 
     @property
     def reason(self) -> str:

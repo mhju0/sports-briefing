@@ -100,6 +100,7 @@ def derive_texans_candidates(
                 source_generated_at=game["provider_generated_at"],
                 source_observed_at=game["last_seen_at"],
                 source_record_id=game["provider_game_id"],
+                summary_facts=(("home_team", home), ("away_team", away)),
             )
         )
 
@@ -203,6 +204,7 @@ def derive_texans_candidates(
                 source_generated_at=newest["provider_generated_at"],
                 source_observed_at=newest["observed_at"],
                 source_record_id=newest["change_key"],
+                summary_facts=_change_facts(newest),
             )
         )
     return selected_games + [item for item in candidates if item.item_type == "availability_change"]
@@ -216,6 +218,21 @@ def _change_summary(change: dict[str, Any]) -> str:
     old_value = change["old_value"] if change["old_value"] is not None else "unknown"
     new_value = change["new_value"] if change["new_value"] is not None else "unknown"
     return f"{change['player_name']}: {old_value} → {new_value}"
+
+
+def _change_facts(change: dict[str, Any]) -> tuple[tuple[str, str], ...]:
+    facts = [("player", change["player_name"])]
+    status_type = {
+        "PRACTICE_STATUS_CHANGED": "practice_status",
+        "GAME_STATUS_CHANGED": "game_status",
+    }.get(change["change_type"])
+    if status_type is not None:
+        facts.append(("status_type", status_type))
+        if change["old_value"] is not None:
+            facts.append(("previous_status", change["old_value"]))
+        if change["new_value"] is not None:
+            facts.append(("new_status", change["new_value"]))
+    return tuple(facts)
 
 
 def _change_field(change_type: str) -> str:

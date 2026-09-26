@@ -20,7 +20,7 @@ HARD_GATE_OUTCOMES = frozenset({"pass", "fail"})
 # Only these candidate fields can reach the model; the rest are placeholders.
 EVIDENCE_FIELDS = frozenset({
     "stable_id", "entity_name", "event_state", "title", "summary",
-    "competition", "event_time", "change_time", "result_hidden", "result",
+    "competition", "event_time", "change_time", "result_hidden", "result", "summary_facts",
 })
 
 
@@ -83,6 +83,7 @@ def case_candidate(case: dict[str, Any]) -> TimelineCandidate:
         source_record_id="evaluation",
         result_hidden=fields.get("result_hidden", False),
         result=fields.get("result"),
+        summary_facts=tuple((str(fact_id), str(value)) for fact_id, value in fields.get("summary_facts", [])),
     )
 
 
@@ -111,6 +112,7 @@ def evaluate_case(case: dict[str, Any]) -> dict[str, Any]:
         "expected": expected,
         "matches_expectation": matches,
         "review": case.get("review"),
+        "revision": case.get("revision"),
     }
 
 
@@ -130,18 +132,32 @@ def render_report(results: list[dict[str, Any]]) -> str:
             + (f" — {expected['hard_gate_note']}" if expected.get("hard_gate_note") else ""),
             f"  review: {json.dumps(result['review']) if result['review'] else 'not yet reviewed'}",
         ]
-    verifier_accepts = sum(result["verifier"] == "accept" for result in results)
-    missed = sum(
-        result["verifier"] == "accept" and result["expected"]["hard_gates"] == "fail" for result in results
-    )
-    unexpected = sum(not result["matches_expectation"] for result in results)
+        if result["revision"]:
+            lines.append(f"  revision: {result['revision']}")
+    counts = summarize(results)
     lines += [
         "",
-        f"verifier accepted {verifier_accepts}; of those, {missed} are expected to fail a hard gate "
-        "(verifier blind spots that need human review)",
-        f"expectation mismatches: {unexpected}",
+        f"cases: {counts['cases']}",
+        f"verifier accepted: {counts['accepted']} (hard-rule pass {counts['accepted_pass']}, "
+        f"hard-rule fail {counts['blind_spots']})",
+        f"verifier rejected: {counts['rejected']}",
+        f"known verifier blind spots (need human review): {counts['blind_spots']}",
+        f"expectation mismatches: {counts['mismatches']}",
     ]
     return "\n".join(lines)
+
+
+def summarize(results: list[dict[str, Any]]) -> dict[str, int]:
+    """Plain counts of a small hand-built set; not a benchmark or accuracy score."""
+    accepted = [result for result in results if result["verifier"] == "accept"]
+    return {
+        "cases": len(results),
+        "accepted": len(accepted),
+        "rejected": len(results) - len(accepted),
+        "accepted_pass": sum(result["expected"]["hard_gates"] == "pass" for result in accepted),
+        "blind_spots": sum(result["expected"]["hard_gates"] == "fail" for result in accepted),
+        "mismatches": sum(not result["matches_expectation"] for result in results),
+    }
 
 
 def main(argv: list[str] | None = None) -> int:

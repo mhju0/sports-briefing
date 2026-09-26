@@ -109,6 +109,7 @@ def derive_arsenal_candidates(
                 source_record_id=fixture["provider_match_id"],
                 result_hidden=result_hidden,
                 result=result,
+                summary_facts=(("home_team", home), ("away_team", away)),
             )
         )
     live = [item for item in candidates if item.tier is TimelineTier.LIVE]
