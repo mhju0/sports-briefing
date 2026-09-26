@@ -49,7 +49,11 @@ def derive_news_candidates(topics: list[dict[str, Any]], *, as_of: datetime) -> 
             source_record_id=topic["material_url"], result=None,
         ))
     # A single latest development keeps news from filling both Texans slots.
-    return sorted(eligible, key=lambda item: (item.change_time or "", item.stable_id), reverse=True)[:1]
+    return sorted(
+        eligible,
+        key=lambda item: (_parse_timestamp(item.change_time or "", "news meaningful change"), item.stable_id),
+        reverse=True,
+    )[:1]
 
 
 def load_news_timeline_candidates(database: Path, as_of: datetime, *, hide_results: bool) -> list[TimelineCandidate]:

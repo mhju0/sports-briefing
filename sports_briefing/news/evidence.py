@@ -40,7 +40,7 @@ def normalize_batch(value: object) -> EvidenceBatch:
     if not isinstance(value, dict) or set(value) - {"evidence_mode", "source_use_authorized", "documents"}:
         raise EvidenceError("evidence must contain only evidence_mode, source_use_authorized, documents")
     mode = value.get("evidence_mode")
-    if mode not in {"synthetic", "reviewed"}:
+    if not isinstance(mode, str) or mode not in {"synthetic", "reviewed"}:
         raise EvidenceError("evidence_mode must be synthetic or reviewed")
     if mode == "reviewed" and value.get("source_use_authorized") is not True:
         raise EvidenceError("reviewed official evidence requires source_use_authorized=true")

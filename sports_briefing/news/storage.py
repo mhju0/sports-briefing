@@ -89,7 +89,14 @@ def persist_reviewed_batch(path: Path, batch: EvidenceBatch, *, observed_at: str
         with connection:
             connection.execute("BEGIN IMMEDIATE")
             source_id = _source(connection, batch.mode)
-            for document in sorted(batch.documents, key=lambda item: (item.published_at or "", item.canonical_url)):
+            for document in sorted(
+                batch.documents,
+                key=lambda item: (
+                    _parse_timestamp(item.published_at, "news publication")
+                    if item.published_at is not None else datetime.min.replace(tzinfo=timezone.utc),
+                    item.canonical_url,
+                ),
+            ):
                 if document.published_at is not None and _parse_timestamp(document.published_at, "news publication") > observation:
                     raise StorageError("publication time cannot follow evidence observation")
                 existing = connection.execute(
@@ -218,7 +225,7 @@ def _apply_document(
 def load_news_topics(path: Path) -> list[dict[str, Any]]:
     if not path.exists():
         return []
-    with closing(sqlite3.connect(f"file:{path}?mode=ro", uri=True)) as connection:
+    with closing(sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)) as connection:
         connection.row_factory = sqlite3.Row
         try:
             rows = connection.execute(
@@ -238,9 +245,10 @@ def load_news_topics(path: Path) -> list[dict[str, Any]]:
 def inspect_news_state(path: Path) -> dict[str, Any]:
     if not path.exists():
         raise StorageError(f"database does not exist: {path}")
-    with closing(sqlite3.connect(f"file:{path}?mode=ro", uri=True)) as connection:
+    with closing(sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)) as connection:
         connection.row_factory = sqlite3.Row
         try:
+            connection.execute("BEGIN")
             sources = [dict(row) for row in connection.execute("SELECT * FROM news_sources ORDER BY id")]
             documents = [dict(row) for row in connection.execute("SELECT * FROM news_documents ORDER BY id")]
             topics = [dict(row) for row in connection.execute("SELECT * FROM news_topics ORDER BY id")]

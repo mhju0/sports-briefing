@@ -84,6 +84,18 @@ class ReviewedTexansEvidenceTests(unittest.TestCase):
         self.assertEqual((outcomes["topics_inserted"], outcomes["topics_updated"]), (1, 1))
         self.assertEqual(inspect_news_state(self.db)["topics"][0]["revision"], 2)
 
+    def test_fractional_publication_time_orders_after_whole_second(self) -> None:
+        base = fixture("synthetic-placement.json")["documents"][0]
+        followup = fixture("synthetic-followup.json")["documents"][0]
+        base["published_at"] = "2026-09-25T10:00:00Z"
+        followup["published_at"] = "2026-09-25T10:00:00.100000Z"
+        combined = {"evidence_mode": "synthetic", "documents": [followup, base]}
+        counts = self.import_value(combined, T2)
+        self.assertEqual((counts["topics_inserted"], counts["topics_updated"]), (1, 1))
+        topic = inspect_news_state(self.db)["topics"][0]
+        self.assertEqual(topic["revision"], 2)
+        self.assertEqual(topic["material_published_at"], "2026-09-25T10:00:00.100000Z")
+
     def test_followup_changes_topic_once_and_repeat_does_not_freshen_it(self) -> None:
         self.import_value(fixture("synthetic-placement.json"))
         followup = fixture("synthetic-followup.json")
@@ -177,6 +189,10 @@ class ReviewedTexansEvidenceTests(unittest.TestCase):
         bad["source_use_authorized"] = True
         with self.assertRaises(EvidenceError):
             normalize_batch(bad)
+        bad = deepcopy(value)
+        bad["evidence_mode"] = []
+        with self.assertRaisesRegex(EvidenceError, "evidence_mode"):
+            normalize_batch(bad)
         huge = Path(self.directory.name) / "huge.json"
         huge.write_bytes(b" " * (512 * 1024 + 1))
         with self.assertRaises(EvidenceError):
@@ -196,6 +212,58 @@ class ReviewedTexansEvidenceTests(unittest.TestCase):
         with sqlite3.connect(self.db) as connection:
             after = {name: connection.execute(f"SELECT * FROM {name}").fetchall() for name in before}
         self.assertEqual(after, before)
+
+    def test_inspect_reads_one_snapshot_during_concurrent_wal_import(self) -> None:
+        self.import_value(fixture("synthetic-placement.json"))
+        with sqlite3.connect(self.db) as connection:
+            self.assertEqual(connection.execute("PRAGMA journal_mode=WAL").fetchone()[0], "wal")
+        real_connect = sqlite3.connect
+        followup = normalize_batch(fixture("synthetic-followup.json"))
+        triggered = False
+
+        class ReadConnection:
+            def __init__(self, actual: sqlite3.Connection):
+                object.__setattr__(self, "actual", actual)
+
+            def __getattr__(self, name: str):
+                return getattr(self.actual, name)
+
+            def __setattr__(self, name: str, value: object) -> None:
+                setattr(self.actual, name, value)
+
+            def execute(self, sql: str, *args: object):
+                nonlocal triggered
+                cursor = self.actual.execute(sql, *args)
+                if sql != "SELECT * FROM news_sources ORDER BY id":
+                    return cursor
+
+                def after_source_rows():
+                    nonlocal triggered
+                    yield from cursor
+                    triggered = True
+                    persist_reviewed_batch(self_db, followup, observed_at=T2)
+
+                return after_source_rows()
+
+        self_db = self.db
+
+        def intercepted_connect(*args: object, **kwargs: object):
+            actual = real_connect(*args, **kwargs)
+            return ReadConnection(actual) if kwargs.get("uri") else actual
+
+        with patch("sports_briefing.news.storage.sqlite3.connect", side_effect=intercepted_connect):
+            before = inspect_news_state(self.db)
+        self.assertTrue(triggered)
+        self.assertEqual((before["document_count"], before["topic_count"], before["evidence_link_count"]), (2, 1, 2))
+        after = inspect_news_state(self.db)
+        self.assertEqual((after["document_count"], after["topic_count"], after["evidence_link_count"]), (3, 1, 3))
+        self.assertEqual((before["topics"][0]["revision"], after["topics"][0]["revision"]), (1, 2))
+
+    def test_read_only_db_uri_handles_spaces_question_and_hash(self) -> None:
+        special = Path(self.directory.name) / "sports ? #.sqlite3"
+        persist_reviewed_batch(special, normalize_batch(fixture("synthetic-placement.json")), observed_at=T1)
+        self.assertEqual(inspect_news_state(special)["document_count"], 2)
+        self.assertEqual(len(load_news_topics(special)), 1)
 
     def test_timeline_is_sparse_stable_and_uses_existing_ranker(self) -> None:
         empty = build_home_timeline(self.db, as_of="2026-09-25T11:30:00Z")
@@ -223,6 +291,16 @@ class ReviewedTexansEvidenceTests(unittest.TestCase):
         self.import_value(value)
         self.assertEqual(inspect_news_state(self.db)["topic_count"], 2)
         self.assertEqual(len(derive_news_candidates(load_news_topics(self.db), as_of=datetime(2026, 9, 25, 11, 30, tzinfo=timezone.utc))), 1)
+
+    def test_fractional_change_time_wins_latest_news_selection(self) -> None:
+        self.import_value(fixture("synthetic-placement.json"))
+        original = load_news_topics(self.db)[0]
+        whole = dict(original, topic_key="texans:whole", meaningful_changed_at="2026-09-25T11:00:00Z")
+        fractional = dict(original, topic_key="texans:fractional", meaningful_changed_at="2026-09-25T11:00:00.100000Z")
+        selected = derive_news_candidates(
+            [fractional, whole], as_of=datetime(2026, 9, 25, 11, 30, tzinfo=timezone.utc)
+        )
+        self.assertEqual([item.stable_id for item in selected], ["news:texans:fractional"])
 
     def test_news_candidate_uses_existing_cross_sport_precedence(self) -> None:
         self.import_value(fixture("synthetic-placement.json"))
