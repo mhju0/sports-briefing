@@ -22,11 +22,11 @@ Provider normalization stays in provider/domain modules. Structured providers re
 | M4 — ranked Arsenal + Texans timeline | DONE | Deterministic sparse shared ranking, CLI/HTTP and offline scenarios; `594fb04`, [record](../milestone-4.md) | Does not close M3 live gate |
 | M5 — Scottie Golf | IMPLEMENTATION COMPLETE — ACCEPTANCE OPEN | Stable identity, confirmed field, rounds, tee times, atomic persistence, live unchanged-refetch proof, IMMINENT/ROUTINE and accepted product-observed RECENT_RESULT; `b0016f1`, [record](../milestone-5.md) | Real Scottie-specific supported individual stroke-play LIVE evidence and implementation/acceptance; no synthetic substitute |
 | M6 — unstructured/news layer | SOURCE-INDEPENDENT IMPLEMENTATION COMPLETE — ACCEPTANCE BLOCKED EXTERNALLY | Offline reviewed-evidence P1 foundation; P2 licensed Wikinews archival adapter live-verified; P3 real two-publication grouping/idempotency verified; [record](../milestone-6.md) | Permitted real current/recent qualifying news candidate. Blocked on source access/rights; source-specific mapping follows real payload evidence. Does not block M7 engineering |
-| M7 — bounded LLM synthesis | PLANNED — NEXT ENGINEERING MILESTONE | No implementation | Not blocked by M6's external gate. First session scopes the smallest synthesis boundary over already-ranked candidates and stops for review; synthesis consumes selected evidence, never determines factual state/ranking |
+| M7 — bounded LLM synthesis | IN PROGRESS — SLICE 1 AWAITING REVIEW | Provider-independent cached summary replacement after ranking: evidence atoms, deterministic verifier, SQLite cache, fake-model tests; inert without a profile; [record](../milestone-7.md) | Review slice 1. Real inference needs provider/budget/retention, per-source LLM rights, prompt, generation trigger and a reviewed evaluation set |
 
 ## Current active milestone
 
-No milestone is in active implementation. **M7** is the next engineering milestone and awaits explicit scope in a new session. **M6** is blocked externally (see *M6 status and reopen trigger* below); its record follows.
+**M7** slice 1 (provider-independent cached summary synthesis) is implemented and awaits review; no real model is integrated ([record](../milestone-7.md)). **M6** is blocked externally (see *M6 status and reopen trigger* below); its record follows.
 
 **M6 — Unstructured / News Layer.** P3 extends the permitted Wikinews archive proof with a second real publication repeating the same Xhaka signing fact. Both documents are pinned/reviewed, separately attributed and date-only; unrelated transfers are not normalized. Live verification shows two publications, one topic, two links, revision 1 and no meaningful-freshness refresh. This is same-publisher repetition, not independent corroboration.
 
@@ -56,7 +56,7 @@ Offline foundation: four news tables, fixed IR-placement topic identity, exact-c
 
 ## Deferred scope
 
-Broad crawling/news aggregation, social/reporters, LLM synthesis/ranking, vector clustering, new followed entities, personalization, notifications, scheduled/background refresh, deployment/production, and UI expansion. M7 is planned; other later work remains unnumbered.
+Broad crawling/news aggregation, social/reporters, LLM synthesis/ranking, vector clustering, new followed entities, personalization, notifications, scheduled/background refresh, deployment/production, and UI expansion. M7 slice 1 covers only cached summary replacement; other later work remains unnumbered.
 
 ## Verification snapshot
 

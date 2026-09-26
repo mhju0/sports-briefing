@@ -5,9 +5,12 @@ from datetime import datetime, timezone
 from enum import IntEnum
 from pathlib import Path
 import sqlite3
-from typing import Any, Iterable
+from typing import TYPE_CHECKING, Any, Iterable
 
 from .storage import StorageError
+
+if TYPE_CHECKING:
+    from .synthesis import SynthesisProfile
 
 
 class TimelineError(Exception):
@@ -93,6 +96,7 @@ def build_home_timeline(
     as_of: str | None = None,
     hide_results: bool = True,
     limit_per_entity: int = 2,
+    synthesis: SynthesisProfile | None = None,
 ) -> dict[str, Any]:
     evaluation_time = (
         _parse_timestamp(as_of, "timeline as-of time")
@@ -126,6 +130,11 @@ def build_home_timeline(
         as_of=evaluation_time,
         limit_per_entity=limit_per_entity,
     )
+    if synthesis is not None:
+        from .synthesis import apply_cached_summaries
+
+        # Runs after selection: cached prose can replace a summary, never an item.
+        ranked = apply_cached_summaries(database, ranked, hide_results=hide_results, profile=synthesis)
     return {
         "as_of": _format_timestamp(evaluation_time),
         "spoiler_mode": "hide_results" if hide_results else "show_results",
