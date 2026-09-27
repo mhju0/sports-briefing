@@ -113,8 +113,9 @@ This section is the canonical public-deployment rights view. It supersedes earli
 - **Local evidence:**
   - The first recorded authenticated call was 2026-09-22T12:29:45Z (`nfl_fetches` id 1, deleted on 2026-09-27). No trial start or expiry date is recorded in the repository.
   - Remediation (2026-09-27): the fixtures derived from authenticated responses (`tests/fixtures/golf/*`, `tests/fixtures/texans_schedule_live_shape.json`) were replaced with independently authored synthetic payloads; captured values were removed from the M3/M5 records; all NFL/Golf rows were deleted from the local database (then `VACUUM`, no backup kept); repo-related captures under `/private/tmp` were deleted.
-  - Still present: Scottie's and the Texans' provider UUIDs, kept as configuration identifiers, and earlier Git history, which still contains the derived fixtures and captured values.
-  - **Repository publication is blocked until historical Sportradar-derived material is either removed or explicitly confirmed permissible to retain.** No certificate of destruction has been issued.
+  - History remediation (2026-09-27, before any remote existed): `git filter-repo` removed the derived fixture versions and the historical M5 test versions from earlier commits, and redacted captured values in historical M3/M5 records and one M3 test version. Reflogs were expired and unreachable objects pruned. Scans of all reachable history found no remaining captured payloads or extracts.
+  - Still present: Scottie's and the Texans' provider UUIDs, kept as configuration identifiers.
+  - The current repository and reachable history are sanitized. The trial dates, the certificate of destruction, and whether hashes/provenance count as derivatives remain external administrative questions. No certificate of destruction has been issued. Publication still depends on the other rights items in this section.
 
 **Texans replacement candidates:**
 - **[nflverse](https://github.com/nflverse/nflverse-data):**
@@ -150,7 +151,7 @@ This section is the canonical public-deployment rights view. It supersedes earli
 | Wikinews archive (CC BY 2.5) | ALLOWED | ALLOWED with attribution (archival, not current news) | ALLOWED | ALLOWED with attribution | ALLOWED |
 | Reviewed Texans news | Operator-reviewed only | BLOCKED (site terms) | BLOCKED | BLOCKED | BLOCKED |
 
-Public demo fixtures must be synthetic. Sanitized fixtures derived from Sportradar responses are provider-derived data and must not be published; the current tracked fixtures are synthetic, but earlier commits still contain derived ones.
+Public demo fixtures must be synthetic. Sanitized fixtures derived from Sportradar responses are provider-derived data and must not be published; the tracked fixtures are synthetic, and derived versions were removed from Git history on 2026-09-27.
 
 ### Proposed public deployment target (not approved or deployed)
 

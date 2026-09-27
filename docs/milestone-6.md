@@ -50,7 +50,7 @@ Independent persistence review found and corrected fractional-second string orde
 
 ## P2 source investigation (2026-09-26)
 
-Baseline: `main` at `8b90305e4c1fb2c2a4baaa7079b33418ca19bfaf`, clean; 136 offline tests rerun successfully. This section records a separate permitted-source proof, not retroactive live acceptance of the synthetic P1 scenarios.
+Baseline: `main` at `dee26cf5c1719b2e0734c1e743f2742417cbcaa8`, clean; 136 offline tests rerun successfully. This section records a separate permitted-source proof, not retroactive live acceptance of the synthetic P1 scenarios.
 
 | Candidate | Observed | Documented access/storage | Decision |
 | --- | --- | --- | --- |
@@ -107,7 +107,7 @@ Offline verification: **8 P2 / 26 combined M6 / 144 complete tests passed**. Tes
 
 ## P3: real grouping and remaining candidate gate
 
-Starting state: `main`, clean at `10c6ed444863bb6ebb30803ec7459f379b611bd2`; 26 focused M6 and 144 full offline tests passed. The remaining requirements were a real permitted same-development pair and a real qualifying current/recent candidate. No M3/M5 gate was retried or closed; M7 remains planned.
+Starting state: `main`, clean at `33e8dc91370af167f71e7dcd2735d1e537a375cb`; 26 focused M6 and 144 full offline tests passed. The remaining requirements were a real permitted same-development pair and a real qualifying current/recent candidate. No M3/M5 gate was retried or closed; M7 remains planned.
 
 ### Bounded discovery and evidence classification
 
@@ -167,7 +167,7 @@ All rows in **12 preexisting structured tables** matched before/after in the pro
 
 ## Status classification and reopen trigger (2026-09-26 audit)
 
-Audit baseline: `main`, clean at `54155759860b76da394bc8ddf197cfe4a89e943b`; 147 complete offline tests passing. No code changed.
+Audit baseline: `main`, clean at `f1f1bf8639c2807d6004941b328be06039bd6a1c`; 147 complete offline tests passing. No code changed.
 
 **Status: source-independent implementation complete — acceptance blocked externally.** This is not DONE.
 

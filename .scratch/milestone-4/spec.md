@@ -2,7 +2,7 @@
 
 Status: complete
 
-Authorized 2026-09-23. Baseline: `4d8577d`.
+Authorized 2026-09-23. Baseline: `43e23ee`.
 
 ## Scope
 

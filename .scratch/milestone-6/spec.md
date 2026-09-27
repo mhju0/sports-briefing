@@ -14,6 +14,6 @@ Minimum bounded topic: IR placement plus an optional explicitly reported placeme
 
 ## Verification and acceptance
 
-Starting complete suite: 118 tests at `b0016f1`. Offline foundation implemented: 18 focused and 136 complete tests pass; CLI/restart/loopback HTTP and temporary-copy persistence checks pass. Completion evidence is recorded in [M6 implementation record](../../docs/milestone-6.md).
+Starting complete suite: 118 tests at `0884b9c`. Offline foundation implemented: 18 focused and 136 complete tests pass; CLI/restart/loopback HTTP and temporary-copy persistence checks pass. Completion evidence is recorded in [M6 implementation record](../../docs/milestone-6.md).
 
 Open source acceptance: permission for systematic retrieval/storage, a bounded permitted live adapter, and real persisted same-development evidence grouping. Offline tests cannot stand in for that evidence. M3 and M5 gates remain independent. M7 is planned but not authorized for implementation here.
