@@ -30,7 +30,7 @@ Provider normalization stays in provider/domain modules. Structured providers re
 
 **M6 — Unstructured / News Layer.** P3 extends the permitted Wikinews archive proof with a second real publication repeating the same Xhaka signing fact. Both documents are pinned/reviewed, separately attributed and date-only; unrelated transfers are not normalized. Live verification shows two publications, one topic, two links, revision 1 and no meaningful-freshness refresh. This is same-publisher repetition, not independent corroboration.
 
-The current-candidate gate remains open: Wikinews is read-only and both publications are historical; commercial news access is not configured/confirmed. Existing candidate code supports Texans IR placements, not Arsenal news. Choose the smallest rights-cleared current source before adding any necessary mapping. M3/M5 gates remain unchanged; M7 is planned only.
+The current-candidate gate remains open: Wikinews is read-only and both publications are historical; commercial news access is not configured/confirmed. Existing candidate code supports Texans IR placements, not Arsenal news. Choose the smallest rights-cleared current source before adding any necessary mapping. M3/M5 gates remain unchanged; M7 status is in the table above.
 Core invariant: multiple source documents can resolve into one provenance-preserving development whose timeline freshness changes only when underlying information meaningfully changes.
 
 P1 acceptance: source traceability; separate publication, observation and meaningful-change clocks; same-document and same-development idempotency; repeated information versus genuine follow-up; atomic isolated news persistence; deterministic sparse candidates through unchanged shared ranking; offline tests and bounded live-source proof. Every article is not a timeline item.
@@ -55,11 +55,37 @@ Offline foundation: four news tables, fixed IR-placement topic identity, exact-c
 - Public deployment (2026-09-27 rights check; [canonical matrix](../feasibility.md#public-deployment-rights-checked-2026-09-27)):
   - Sportradar trial data may not be displayed publicly.
   - Sportradar §7.4 requires destroying data, derivatives and extracts within 30 days after termination or expiration. The trial dates are not recorded. The current tree, local database and temporary captures were remediated on 2026-09-27 (synthetic fixtures, sanitized records).
-  - Git history was rewritten locally on 2026-09-27 (no remote existed): the current repository and reachable history are sanitized, and commit SHAs from the M3 schedule fix onward changed. Sportradar trial-retention confirmation and the certificate-of-destruction question remain external administrative items. The repository is not yet public-ready; the other rights items above still apply.
+  - Git history was rewritten locally on 2026-09-27 (no remote existed): the current repository and reachable history are sanitized, and commit SHAs from the M3 schedule fix onward changed. Sportradar trial-retention confirmation and the certificate-of-destruction question remain external administrative items. Repository publication and deployment are tracked separately in the [public-ready checklist](#public-ready-checklist); the other rights items above still apply to deployment.
   - football-data.org public display and LLM processing await provider confirmation.
   - Scottie is demo-only until a suitable licensed source exists.
 
 - M6: permitted current/recent news source access. Official Texans permission and current commercial news entitlements remain unavailable. The licensed Wikinews archival pair has proved grouping, but not current eligibility. Current-source access remains unavailable; source-specific normalization/candidate work depends on that evidence. No external message or sales request has been sent.
+
+## Public-ready checklist
+
+Three separate bars (2026-09-28). Meeting one does not imply the next.
+
+**Repository public-ready** (clone, understand, and test without private context or credentials):
+- [x] Reachable history sanitized of Sportradar-derived payloads and extracts (2026-09-27 rewrite).
+- [x] No secrets in the tree or reachable history (local `gitleaks` 8.30.1 plus pattern scans, 2026-09-28); `.env` is ignored and was never committed.
+- [x] README covers purpose, entities, provider/demo/unavailable status, architecture, local setup and tests.
+- [x] Fresh clone installs from `requirements-dev.txt` and passes the offline suite and public-mode demo without credentials.
+- [x] Minimal CI workflow (`.github/workflows/ci.yml`), offline, no secrets. Not yet run on a host, because no remote exists.
+- [ ] Licence choice (owner decision; none is declared).
+- [ ] Remote created and repository published (owner action).
+
+**Deployment ready** (not started; nothing deployed):
+- [ ] football-data.org written confirmation for public display and caching, or Arsenal stays unavailable.
+- [ ] Sportradar trial dates and certificate-of-destruction question closed.
+- [ ] Host, process supervision, domain and HTTPS configured.
+- [ ] SQLite backup and a rehearsed restore.
+- [ ] Health monitoring and alerting.
+
+**M7 production ready** (not started beyond offline slices 1–3):
+- [ ] Per-source permission to send evidence to an external model.
+- [ ] Model/provider selection, budget and data-retention terms.
+- [ ] Real-model evaluation against the offline set, plus human review of real outputs.
+- [ ] Generation trigger and cache population path.
 
 ## Deferred scope
 

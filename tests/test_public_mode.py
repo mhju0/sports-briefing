@@ -225,6 +225,19 @@ class PublicTimelineTests(unittest.TestCase):
             "entities": {"arsenal": "unavailable", "texans": "demo", "scheffler": "demo"},
         })
 
+    def test_public_api_end_to_end_over_persisted_provider_state(self) -> None:
+        self.seed_arsenal()
+        self.seed_texans()
+        with patch.dict(os.environ, {PUBLIC_MODE_ENV: "true"}):
+            client = TestClient(create_app(self.database))
+        timeline = client.get(f"/timeline?as_of={AS_OF}").json()
+
+        self.assertEqual({item["entity"]["id"] for item in timeline["items"]}, {"texans", "scheffler"})
+        self.assertEqual({item["data_mode"] for item in timeline["items"]}, {"demo"})
+        self.assertEqual(timeline["unavailable_entities"], ["arsenal"])
+        self.assertEqual(client.get("/meta").json()["entities"],
+                         {"arsenal": "unavailable", "texans": "demo", "scheffler": "demo"})
+
     def test_public_mode_uses_no_network(self) -> None:
         with patch("socket.socket.connect", side_effect=AssertionError("network used")), \
                 patch("urllib.request.urlopen", side_effect=AssertionError("network used")):

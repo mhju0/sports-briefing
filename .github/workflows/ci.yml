@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -r requirements-dev.txt
+      # Offline suite: synthetic fixtures and temporary SQLite; no provider credentials.
+      - run: python -m unittest discover -s tests
+      - run: python -m compileall -q sports_briefing tests
+      # Whole-tree whitespace check: the CI equivalent of the local `git diff --check`.
+      - run: git diff --check "$(git hash-object -t tree /dev/null)" HEAD

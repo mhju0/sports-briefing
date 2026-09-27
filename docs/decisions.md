@@ -92,7 +92,7 @@ LLMs receive only permitted, bounded source evidence and a strict output schema.
 
 ## FullCourt lessons inspected locally
 
-Read-only inspection of `/Users/michaelju/Workspace/Projects/fullcourt` confirmed useful patterns; no code was copied and no FullCourt tests were rerun:
+Read-only inspection of a local FullCourt checkout confirmed useful patterns; no code was copied and no FullCourt tests were rerun:
 
 - `scripts/schedule_upsert_contract.py`: field-specific source ownership and preservation of known values across weaker updates.
 - `scripts/fetch_nba_schedule_cdn.py`: provider-shaped records normalized before persistence; explicit time-zone conversion.

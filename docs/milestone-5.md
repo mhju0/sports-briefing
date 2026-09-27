@@ -1,4 +1,4 @@
-# Milestone 5: Scottie Scheffler Golf ingestion (in progress)
+# Milestone 5: Scottie Scheffler Golf ingestion (implementation complete; acceptance open)
 
 The bounded M5 slice stores one confirmed Scottie Scheffler PGA stroke-play tournament from Sportradar Golf trial REST data. It preserves tournament dates as dates, actual tee times as UTC instants, four provider round identities/statuses, Scottie's field entry, leaderboard totals, selected-round scorecard facts, and source clocks. The profile endpoint established Scottie's UUID during provider proof; routine ingestion uses that UUID and does not refetch his historical profile.
 
