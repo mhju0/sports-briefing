@@ -52,6 +52,12 @@ Offline foundation: four news tables, fixed IR-placement topic identity, exact-c
 - M3: current-target Sportradar Texans report availability; last recorded Week 3 response was empty. No fallback to a different week as acceptance.
 - M5: await observable Scottie active play in supported individual stroke-play. Do not use cup/team events or another golfer as acceptance.
 
+- Public deployment (2026-09-27 rights check; [canonical matrix](../feasibility.md#public-deployment-rights-checked-2026-09-27)):
+  - Sportradar trial data may not be displayed publicly.
+  - Sportradar §7.4 requires destroying data, derivatives and extracts within 30 days after termination or expiration. The trial dates are not recorded, and the remediation decision is pending with the owner.
+  - football-data.org public display and LLM processing await provider confirmation.
+  - Scottie is demo-only until a suitable licensed source exists.
+
 - M6: permitted current/recent news source access. Official Texans permission and current commercial news entitlements remain unavailable. The licensed Wikinews archival pair has proved grouping, but not current eligibility. Current-source access remains unavailable; source-specific normalization/candidate work depends on that evidence. No external message or sales request has been sent.
 
 ## Deferred scope

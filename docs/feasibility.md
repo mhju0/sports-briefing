@@ -91,3 +91,87 @@ For each selected provider, collect a small permitted response sample (normal + 
 ## M3 NFL research update
 
 The [M3 provider record](milestone-3.md) supersedes the earlier NFL shortlist where they differ. API-NFL still lacks documented practice-participation fidelity. SportsDataIO’s current OpenAPI marks Practice/PracticeDescription deprecated. Sportradar v7 documents explicit practice/designation fields and upstream generation headers; that is the sole provisional M3 adapter, not proof of live access or licensed publication. The [current account guide](https://developer.sportradar.com/getting-started/docs/your-account) states a 30-day trial, correcting the initial 90-day note.
+
+## Public deployment rights (checked 2026-09-27)
+
+This section is the canonical public-deployment rights view. It supersedes earlier rows here where they differ. It records current public terms, not signed licences or provider replies. Nothing has been deployed, purchased or sent to a provider.
+
+**football-data.org** ([registration terms](https://www.football-data.org/client/register), last updated 2018-06-01; [FAQ](https://www.football-data.org/documentation/faq)):
+- **Public display: UNRESOLVED.** The terms bind one key to "a single Application, in its web and/or mobile form" and require credit "in your app or website". After cancellation the customer may not "reference the football data … on their own site or service". Display is therefore implied, but no licence to publish is expressly granted.
+- **Commercial use:** the terms are silent. They draw no distinction between personal, non-commercial and commercial use.
+- **Caching:** the terms are silent.
+- **External LLM processing: UNRESOLVED — provider confirmation required.**
+- **Attribution:** the exact text "Football data provided by the Football-Data.org API", placed "in a visible section of your app/website" (for example the footer or an about screen).
+
+**Sportradar NFL and Golf** ([Terms and Conditions](https://developer.sportradar.com/sportradar-updates/page/terms-and-conditions), last updated 2026-08-05):
+- **Trial scope:** "solely for purposes of internally evaluating the Products" (§3.1); "internal testing and evaluation purposes only" (§1.14). Public display of trial data is **BLOCKED**.
+- **Destruction obligation (§7.4):** "Upon termination or expiration of this Agreement for any reason", the customer must cease use. "Within thirty (30) days of the effective date of termination", it must "commence and thereafter diligently pursue the destruction and sanitization" of all data made available, "together with any derivatives, copies, extracts, or compilations thereof". A Certificate of Destruction is due "no later than ninety (90) days following the effective date of termination".
+- **Unresolved:**
+  - whether trial expiry is the Agreement's "expiration" (the Effective Date is defined by an Order Form, which a trial lacks);
+  - whether hashes and provenance metadata count as derivatives;
+  - whether trial users must file the certificate.
+- **Local evidence:**
+  - The first recorded authenticated call was 2026-09-22T12:29:45Z (`nfl_fetches` id 1). No trial start or expiry date is recorded in the repository.
+  - Sportradar-derived material exists in the local database, in tracked sanitized fixtures (`tests/fixtures/golf/*`, `tests/fixtures/texans_schedule_live_shape.json`), in M3/M5 records, and in local temporary captures.
+  - Deletion is a pending owner decision. Nothing has been deleted.
+
+**Texans replacement candidates:**
+- **[nflverse](https://github.com/nflverse/nflverse-data):**
+  - The `nflverse-data` releases carry a CC-BY-4.0 repository licence, but its README describes the data as scraped. The schedule source [`nfldata`](https://github.com/nflverse/nfldata) has no licence file, and its dataset notes cite Pro Football Reference, ESPN and NFL identifiers.
+  - `load_injuries` is "collected from an API" that is not named ([nflreadr reference](https://cran.r-project.org/web/packages/nflreadr/refman/nflreadr.html)).
+  - Classification:
+    - schedules/scores **UNRESOLVED** (updated every 5 minutes in season);
+    - rosters **UNRESOLVED** (daily);
+    - injuries **NOT SUITABLE** (unnamed upstream, daily 07:00 UTC cadence) ([update schedule](https://nflreadr.nflverse.com/articles/nflverse_data_schedule.html)).
+- **[BALLDONTLIE](https://www.balldontlie.io/terms.html)** (terms updated 2026-09-17):
+  - The terms allow users to "publish, display, distribute … and create derivative works". They list AI/ML use as permitted and require no attribution.
+  - They also state users are "solely responsible for determining and obtaining any third-party rights".
+  - NFL tiers ([docs](https://nfl.balldontlie.io/)): games are free; injuries cost $9.99/month; practice designations cost $39.99/month.
+  - Classification: **LIKELY** at the provider level. League rights remain disclaimed.
+
+**Scottie:**
+- [Data Golf](https://datagolf.com/terms-and-conditions) allows "personal, non-commercial use" and no redistribution, so it is **BLOCKED** for public use.
+- [TheSportsDB](https://www.thesportsdb.com/pricing) has no tee times.
+- [BALLDONTLIE PGA](https://pga.balldontlie.io/) puts results at $9.99/month, but field and tee times need the $39.99/month tier, which alone exceeds the $10–25/month deployment budget.
+- **Decision: Scottie remains fixture/demo-only until a suitable licensed source exists.**
+
+**Wikinews:** the pinned 2016 pages are CC BY 2.5, which requires attribution and has no share-alike term ([copyright](https://en.wikinews.org/wiki/Wikinews:Copyright)). Wikinews has been read-only since 2026-05-04 ([closure](https://en.wikinews.org/wiki/Wikinews:Closure_of_Wikinews)).
+
+| Entity / source | Local engineering use | Public live use | Public demo / fixture use | External LLM use | Status |
+| --- | --- | --- | --- | --- | --- |
+| Arsenal · football-data.org free | ALLOWED | UNRESOLVED (display implied, not granted) | ALLOWED with synthetic fixtures | UNRESOLVED | UNRESOLVED — provider confirmation |
+| Texans · Sportradar NFL trial | ALLOWED until trial end, then §7.4 | BLOCKED | BLOCKED for Sportradar-derived fixtures | BLOCKED | BLOCKED |
+| Scottie · Sportradar Golf trial | ALLOWED until trial end, then §7.4 | BLOCKED | BLOCKED for Sportradar-derived fixtures | BLOCKED | BLOCKED |
+| Texans · synthetic fixtures | ALLOWED | — | ALLOWED, labelled | ALLOWED | DEMO ONLY |
+| Scottie · synthetic fixtures | ALLOWED | — | ALLOWED, labelled | ALLOWED | DEMO ONLY |
+| Texans · BALLDONTLIE (not integrated) | Not integrated | LIKELY (league rights disclaimed) | — | LIKELY (terms permit AI use) | Candidate only |
+| Texans · nflverse (not integrated) | Not integrated | UNRESOLVED | — | UNRESOLVED | Not selected |
+| Wikinews archive (CC BY 2.5) | ALLOWED | ALLOWED with attribution (archival, not current news) | ALLOWED | ALLOWED with attribution | ALLOWED |
+| Reviewed Texans news | Operator-reviewed only | BLOCKED (site terms) | BLOCKED | BLOCKED | BLOCKED |
+
+Public demo fixtures must be synthetic. Sanitized fixtures derived from Sportradar responses are provider-derived data and must not be published.
+
+### Proposed public deployment target (not approved or deployed)
+
+- **Host:** one always-on Hetzner CX23 in an EU location, running FastAPI/Uvicorn behind Caddy (automatic HTTPS) as a systemd service.
+- **Ingestion:** systemd timers call the existing ingestion CLI, so no new application scheduler is needed.
+- **Storage:** SQLite on the local disk. Postgres is not needed for one writer on one host.
+- **Backups:**
+  - a nightly online `sqlite3 .backup` to dated files on the host, keeping 14;
+  - Hetzner server backups;
+  - a periodic off-host copy.
+- **Restore:**
+  1. Stop the service.
+  2. Copy a dated backup into place.
+  3. Run `PRAGMA integrity_check`.
+  4. Start the service.
+  5. Verify `/health` and `/timeline`.
+
+  Rehearse this once before launch.
+- **Operator responsibilities:** OS security updates, SSH and firewall hygiene, certificate renewal checks, timer failure alerts, quota and 429 handling, and the §7.4 obligations above.
+- **Cost (Hetzner USD list prices before VAT):**
+  - Fixed: server $6.49, primary IPv4 about $0.60, backups about $1.30 (20% of the server price), for about **$8.40/month**.
+  - Optional: a domain at about $1/month.
+  - Variable: LLM $0 while templates are used.
+  - Monitoring: a free uptime checker.
+- **Render** Starter with a disk (about $7.25/month) is the alternative if owner OS maintenance is unwanted. It needs an in-process scheduler because a Render disk attaches to a single service.

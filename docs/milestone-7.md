@@ -166,7 +166,7 @@ External LLM transmission permission is **unresolved unless explicitly verified 
 - football-data.org;
 - Sportradar NFL;
 - Sportradar Golf;
-- Wikinews CC BY 2.5, whose attribution and share-alike obligations would apply to derived prose;
+- Wikinews CC BY 2.5, whose attribution obligation (no share-alike) would apply to derived prose;
 - operator-reviewed news evidence (the Texans site terms prohibit database storage without consent).
 
 The synthesis boundary's technical support is not permission. A source without verified permission must keep its template.
