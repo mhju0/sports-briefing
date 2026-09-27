@@ -1,0 +1,34 @@
+{
+  "season": {
+    "id": "synthetic-season-2026-reg",
+    "year": 2026,
+    "type": "REG",
+    "name": "REG"
+  },
+  "weeks": [
+    {
+      "id": "synthetic-week-3",
+      "sequence": 3,
+      "title": "3",
+      "games": [
+        {
+          "id": "synthetic-game-texans-away",
+          "status": "scheduled",
+          "scheduled": "2026-09-28T00:20:00+00:00",
+          "home": {
+            "id": "synthetic-home-team-id",
+            "name": "Synthetic Riverhawks",
+            "alias": "SRH",
+            "game_number": 3
+          },
+          "away": {
+            "id": "82d2d380-3834-4938-835f-aec541e5ece7",
+            "name": "Houston Texans",
+            "alias": "HOU",
+            "game_number": 3
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "tour": {
+    "id": "5e000000-0000-4000-8000-00000000a001",
+    "alias": "pga",
+    "name": "PGA Tour"
+  },
+  "season": {
+    "id": "5e000000-0000-4000-8000-00000000a002",
+    "year": 2026
+  },
+  "tournaments": [
+    {
+      "id": "11a4e5d0-7c21-4f3a-9b10-5e0000000001",
+      "name": "Synthetic Lakeside Classic",
+      "event_type": "stroke",
+      "start_date": "2026-08-13",
+      "end_date": "2026-08-16",
+      "course_timezone": "America/Chicago",
+      "status": "closed"
+    },
+    {
+      "id": "22b0a4b0-3d42-4e6b-8c20-5e0000000002",
+      "name": "Synthetic Harbor Open",
+      "event_type": "stroke",
+      "start_date": "2026-08-27",
+      "end_date": "2026-08-30",
+      "course_timezone": "America/New_York",
+      "status": "closed"
+    },
+    {
+      "id": "33c0c0c0-9e63-4a7c-8d30-5e0000000003",
+      "name": "Synthetic Nations Cup",
+      "event_type": "cup",
+      "start_date": "2026-09-03",
+      "end_date": "2026-09-06",
+      "course_timezone": "America/Los_Angeles",
+      "status": "scheduled"
+    }
+  ]
+}

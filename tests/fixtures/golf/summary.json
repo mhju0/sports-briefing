@@ -1,0 +1,59 @@
+{
+  "id": "11a4e5d0-7c21-4f3a-9b10-5e0000000001",
+  "name": "Synthetic Lakeside Classic",
+  "start_date": "2026-08-13",
+  "end_date": "2026-08-16",
+  "course_timezone": "America/Chicago",
+  "event_type": "stroke",
+  "status": "closed",
+  "seasons": [
+    {
+      "id": "5e000000-0000-4000-8000-00000000a002",
+      "year": 2026,
+      "tour": {
+        "id": "5e000000-0000-4000-8000-00000000a001",
+        "alias": "pga",
+        "name": "PGA Tour"
+      }
+    }
+  ],
+  "rounds": [
+    {
+      "id": "5e000000-0000-4000-8000-000000000b01",
+      "number": 1,
+      "status": "closed"
+    },
+    {
+      "id": "5e000000-0000-4000-8000-000000000b02",
+      "number": 2,
+      "status": "closed"
+    },
+    {
+      "id": "5e000000-0000-4000-8000-000000000b03",
+      "number": 3,
+      "status": "closed"
+    },
+    {
+      "id": "5e000000-0000-4000-8000-000000000b04",
+      "number": 4,
+      "status": "closed"
+    }
+  ],
+  "field": [
+    {
+      "id": "6db3e736-d86d-4181-aa3b-651b8c1bfdc1",
+      "first_name": "Scottie",
+      "last_name": "Scheffler"
+    },
+    {
+      "id": "5e000000-0000-4000-8000-000000000c01",
+      "first_name": "Rowan",
+      "last_name": "Example"
+    },
+    {
+      "id": "5e000000-0000-4000-8000-000000000c02",
+      "first_name": "Avery",
+      "last_name": "Sample"
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "id": "11a4e5d0-7c21-4f3a-9b10-5e0000000001",
+  "start_date": "2026-08-13",
+  "end_date": "2026-08-16",
+  "course_timezone": "America/Chicago",
+  "event_type": "stroke",
+  "status": "closed",
+  "rounds": [
+    {
+      "id": "5e000000-0000-4000-8000-000000000b01",
+      "number": 1,
+      "status": "closed"
+    },
+    {
+      "id": "5e000000-0000-4000-8000-000000000b02",
+      "number": 2,
+      "status": "closed"
+    },
+    {
+      "id": "5e000000-0000-4000-8000-000000000b03",
+      "number": 3,
+      "status": "closed"
+    },
+    {
+      "id": "5e000000-0000-4000-8000-000000000b04",
+      "number": 4,
+      "status": "closed"
+    }
+  ],
+  "leaderboard": [
+    {
+      "id": "6db3e736-d86d-4181-aa3b-651b8c1bfdc1",
+      "first_name": "Scottie",
+      "last_name": "Scheffler",
+      "position": 2,
+      "tied": true,
+      "score": -11,
+      "strokes": 273,
+      "rounds": [
+        {
+          "sequence": 1,
+          "score": -2,
+          "strokes": 69,
+          "thru": 18
+        },
+        {
+          "sequence": 2,
+          "score": -4,
+          "strokes": 67,
+          "thru": 18
+        },
+        {
+          "sequence": 3,
+          "score": -3,
+          "strokes": 68,
+          "thru": 18
+        },
+        {
+          "sequence": 4,
+          "score": -2,
+          "strokes": 69,
+          "thru": 18
+        }
+      ]
+    },
+    {
+      "id": "5e000000-0000-4000-8000-000000000c01",
+      "first_name": "Rowan",
+      "last_name": "Example",
+      "position": 31,
+      "tied": false,
+      "score": 3,
+      "strokes": 29,
+      "status": "WD",
+      "rounds": [
+        {
+          "sequence": 1,
+          "score": 3,
+          "strokes": 29,
+          "thru": 7
+        }
+      ]
+    }
+  ]
+}

@@ -125,13 +125,13 @@ class TexansMilestoneTests(unittest.TestCase):
 
         normalized = normalize_schedule(live_shape)
 
-        self.assertEqual(normalized.season_id, "sanitized-season-2026-reg")
+        self.assertEqual(normalized.season_id, "synthetic-season-2026-reg")
         self.assertEqual(normalized.season_year, 2026)
         self.assertEqual(normalized.season_type, "REG")
         self.assertEqual(len(normalized.games), 1)
         self.assertEqual(
             normalized.games[0].provider_game_id,
-            "sanitized-game-texans-redacted",
+            "synthetic-game-texans-away",
         )
         self.assertEqual(normalized.games[0].away_team_name, "Houston Texans")
 
@@ -148,17 +148,17 @@ class TexansMilestoneTests(unittest.TestCase):
     def test_live_schedule_shape_ingests_and_repeats_without_duplicates(self) -> None:
         live_shape = load("texans_schedule_live_shape.json")
         injuries = deepcopy(self.limited)
-        injuries["season"]["id"] = "sanitized-season-2026-reg"
-        injuries["week"]["id"] = "sanitized-week-3"
+        injuries["season"]["id"] = "synthetic-season-2026-reg"
+        injuries["week"]["id"] = "synthetic-week-3"
 
         first_code, first_output, first_error = self.ingest(
             injuries,
-            "[redacted]",
+            "Fri, 25 Sep 2026 09:30:00 GMT",
             schedule=live_shape,
         )
         second_code, second_output, second_error = self.ingest(
             injuries,
-            "[redacted]",
+            "Fri, 25 Sep 2026 09:30:00 GMT",
             schedule=live_shape,
         )
 
@@ -171,7 +171,7 @@ class TexansMilestoneTests(unittest.TestCase):
         self.assertEqual(len(state["games"]), 1)
         self.assertEqual(
             state["games"][0]["provider_game_id"],
-            "sanitized-game-texans-redacted",
+            "synthetic-game-texans-away",
         )
         self.assertEqual(state["games"][0]["season_year"], 2026)
         self.assertEqual(state["games"][0]["season_type"], "REG")

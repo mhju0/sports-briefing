@@ -1,0 +1,19 @@
+{
+  "id": "44d0e5a0-1f84-4b8d-9e40-5e0000000004",
+  "name": "Synthetic Mesa Championship",
+  "event_type": "stroke",
+  "start_date": "2026-09-17",
+  "end_date": "2026-09-20",
+  "course_timezone": "America/Denver",
+  "seasons": [
+    {
+      "id": "5e000000-0000-4000-8000-00000000a002",
+      "year": 2026,
+      "tour": {
+        "id": "5e000000-0000-4000-8000-00000000a001",
+        "alias": "pga",
+        "name": "PGA Tour"
+      }
+    }
+  ]
+}

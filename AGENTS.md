@@ -19,7 +19,7 @@ Durable rules for coding agents in this repository. Architecture lives in `docs/
 .venv/bin/python -m compileall -q sports_briefing tests
 git diff --check
 ```
-Tests stay offline, using synthetic or pinned fixtures and temporary SQLite files. Authenticated or live checks run only when a task explicitly calls for them, and never against the default database with synthetic data.
+Tests stay offline, using synthetic or pinned fixtures and temporary SQLite files. Checked-in NFL/Golf provider fixtures must be independently authored synthetic payloads matching the provider schema, not captures or sanitized copies of authenticated responses. Authenticated or live checks run only when a task explicitly calls for them, and never against the default database with synthetic data.
 
 ## Records and commits
 - Update `docs/agents/issue-tracker.md` only when project state materially changes (milestone status, scope, architecture, external blockers). Evidence details belong in `docs/milestone-N.md`.

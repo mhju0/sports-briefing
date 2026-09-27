@@ -54,7 +54,8 @@ Offline foundation: four news tables, fixed IR-placement topic identity, exact-c
 
 - Public deployment (2026-09-27 rights check; [canonical matrix](../feasibility.md#public-deployment-rights-checked-2026-09-27)):
   - Sportradar trial data may not be displayed publicly.
-  - Sportradar §7.4 requires destroying data, derivatives and extracts within 30 days after termination or expiration. The trial dates are not recorded, and the remediation decision is pending with the owner.
+  - Sportradar §7.4 requires destroying data, derivatives and extracts within 30 days after termination or expiration. The trial dates are not recorded. The current tree, local database and temporary captures were remediated on 2026-09-27 (synthetic fixtures, sanitized records).
+  - Repository publication is blocked until historical Sportradar-derived material in Git history is either removed or explicitly confirmed permissible to retain.
   - football-data.org public display and LLM processing await provider confirmation.
   - Scottie is demo-only until a suitable licensed source exists.
 

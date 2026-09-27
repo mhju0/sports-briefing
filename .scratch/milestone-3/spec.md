@@ -47,21 +47,21 @@ Implementation complete — awaiting authenticated provider verification.
 
 ### 2026-09-22 authenticated schedule regression
 
-- The first entitled current-season schedule request returned successfully with normalized `x-generated-date` value `[redacted]`, then failed normalization with `schedule.id must be a non-empty string`; no NFL domain rows were written.
+- The first entitled current-season schedule request returned successfully, then failed normalization with `schedule.id must be a non-empty string`; no NFL domain rows were written.
 - The bounded saved response prefix proves the live payload nests `id`, `year`, `type` and `name` inside top-level `season`, with `weeks` remaining top-level. The full raw body and response headers were not retained.
-- The normalizer now reads only the nested `season` identity. A sanitized live-shape fixture and regressions verify nested identity, reject a missing `season`, ignore conflicting legacy root metadata, and exercise the same structure through existing CLI/persistence tests.
+- The normalizer now reads only the nested `season` identity. A live-shape fixture (since 2026-09-27 an independently authored synthetic payload; provider-derived values were removed under data-retention requirements) and regressions verify nested identity, reject a missing `season`, ignore conflicting legacy root metadata, and exercise the same structure through existing CLI/persistence tests.
 - All 59 offline tests passed after the schedule regression fix. At that checkpoint a post-fix authenticated rerun was unavailable; the later authenticated evidence is recorded below and supersedes that access limitation.
 
 ### 2026-09-22 post-fix authenticated validation
 
-- Current-season schedule: HTTP 200; top-level `season`, `weeks`, `_comment`; season identity nested under `season`; raw `x-generated-date: [redacted]`, normalized to `[redacted]`.
-- Current week 3 injuries: first attempt HTTP 429 with [redacted]; controlled retry HTTP 200 with top-level `season`, `week`, `teams`, `_comment`, raw `x-generated-date: [redacted]`, and `teams: []`. The missing report was not converted into an empty/healthy report.
-- Read-only week 2 diagnostic: HTTP 200; raw `x-generated-date: [redacted]`; [redacted] teams and [redacted] Texans players. Each Texans player had exactly one injury object with the expected status/status-date/practice/primary structure, and the current normalizer accepted all [redacted].
+- Current-season schedule: HTTP 200; top-level `season`, `weeks`, `_comment`; season identity nested under `season`; RFC 7231 `x-generated-date` normalized correctly.
+- Current week 3 injuries: first attempt HTTP 429 (rate limited); controlled retry HTTP 200 with top-level `season`, `week`, `teams`, `_comment`, a months-old `x-generated-date`, and `teams: []`. The missing report was not converted into an empty/healthy report.
+- Read-only week 2 diagnostic: HTTP 200; a populated league report including Texans players. Each Texans player had exactly one injury object with the expected status/status-date/practice/primary structure, and the current normalizer accepted every Texans record.
 - No NFL games, availability, changes, or source revisions were persisted because schedule and current-week availability commit atomically. Final inspect therefore reports empty domain state and the latest controlled normalization failure; briefing reports no successful Texans ingestion.
 - Stale-revision semantics required no change. Live persisted idempotency could not be tested without a populated current-week response. M3 remains `in-progress`.
 
 ### 2026-09-23 KST current-week recheck
 
-- One authenticated week 3 injury read returned HTTP 200 with `teams: []` again. Raw `x-generated-date` remained `[redacted]`; the response `Date` was `[redacted]` (September 23 KST).
-- Earlier stored schedule revisions `[redacted]` and later raw/normalized `[redacted]` values came from separate requests. The older raw header was not retained, so only its normalized database value is known.
+- One authenticated week 3 injury read returned HTTP 200 with `teams: []` again. The stale `x-generated-date` was unchanged.
+- Earlier and later schedule generation values came from separate requests; the older raw header was not retained.
 - No new ingest was run because the current-week Texans report remained absent. NFL domain and revision row counts remain zero; M3 is still awaiting a populated current-week response and live persisted idempotency verification.
