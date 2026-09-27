@@ -101,15 +101,18 @@ This section is the canonical public-deployment rights view. It supersedes earli
 - **Commercial use:** the terms are silent. They draw no distinction between personal, non-commercial and commercial use.
 - **Caching:** the terms are silent.
 - **External LLM processing: UNRESOLVED — provider confirmation required.**
-- **Attribution:** the exact text "Football data provided by the Football-Data.org API", placed "in a visible section of your app/website" (for example the footer or an about screen).
+- **Attribution:** terms §7.1 require "Football data provided by the Football-Data.org API" in a visible location such as the footer or an about section. The [FAQ](https://www.football-data.org/documentation/faq) asks for "Data provided by football-data.org" instead; use the terms wording unless the provider says otherwise.
+- **Price (rechecked 2026-09-27):** free has delayed scores and schedules; "Free w/ Livescores" is €12/month and fits the $10–25/month budget if a paid tier is required.
 
 **Sportradar NFL and Golf** ([Terms and Conditions](https://developer.sportradar.com/sportradar-updates/page/terms-and-conditions), last updated 2026-08-05):
 - **Trial scope:** "solely for purposes of internally evaluating the Products" (§3.1); "internal testing and evaluation purposes only" (§1.14). Public display of trial data is **BLOCKED**.
 - **Destruction obligation (§7.4):** "Upon termination or expiration of this Agreement for any reason", the customer must cease use. "Within thirty (30) days of the effective date of termination", it must "commence and thereafter diligently pursue the destruction and sanitization" of all data made available, "together with any derivatives, copies, extracts, or compilations thereof". A Certificate of Destruction is due "no later than ninety (90) days following the effective date of termination".
+- **Free-trial term (rechecked 2026-09-27):** the master terms state they "APPLY TO BOTH (1) ANY FREE TRIAL … AND (2) ANY ORDER FORM". §1.23 ends a Free Trial's Term at "the end of the Free Trial period as specified to Customer on the Company website at the time of registration", so trial expiry is the Agreement's expiration and §7.4 applies. The [account documentation](https://developer.sportradar.com/getting-started/docs/your-account) (updated 2026-04-20) says "Our trials last 30 days" and that Sportradar sends a notification when a trial ends.
+- **Certificate process:** §7.4 says the certificate form "will be provided by Company to Customer at the time of termination"; the signed certificate is due within 90 days. §16 requires formal notices by courier; `support@sportradar.com` is the documented support route.
 - **Unresolved:**
-  - whether trial expiry is the Agreement's "expiration" (the Effective Date is defined by an Order Form, which a trial lacks);
-  - whether hashes and provenance metadata count as derivatives;
-  - whether trial users must file the certificate.
+  - the account's exact trial start and end dates (shown per product under Subscription Details in the console; not recorded here);
+  - whether Sportradar actually issues the certificate form to lapsed free-trial users, or expects one unprompted;
+  - whether hashes, provenance metadata and retained provider identifiers count as derivatives.
 - **Local evidence:**
   - The first recorded authenticated call was 2026-09-22T12:29:45Z (`nfl_fetches` id 1, deleted on 2026-09-27). No trial start or expiry date is recorded in the repository.
   - Remediation (2026-09-27): the fixtures derived from authenticated responses (`tests/fixtures/golf/*`, `tests/fixtures/texans_schedule_live_shape.json`) were replaced with independently authored synthetic payloads; captured values were removed from the M3/M5 records; all NFL/Golf rows were deleted from the local database (then `VACUUM`, no backup kept); repo-related captures under `/private/tmp` were deleted.
@@ -129,7 +132,7 @@ This section is the canonical public-deployment rights view. It supersedes earli
   - The terms allow users to "publish, display, distribute … and create derivative works". They list AI/ML use as permitted and require no attribution.
   - They also state users are "solely responsible for determining and obtaining any third-party rights".
   - NFL tiers ([docs](https://nfl.balldontlie.io/)): games are free; injuries cost $9.99/month; practice designations cost $39.99/month.
-  - Classification: **LIKELY** at the provider level. League rights remain disclaimed.
+  - Classification: **PROMISING BUT RIGHTS UNCLEAR.** The provider permits display, caching and AI use, but says data "may be compiled and aggregated from a variety of third-party sources", names no source, and disclaims league rights. Injury update cadence is undocumented. Games and injuries ($9.99) fit the budget; practice designations ($39.99) do not.
 
 **Scottie:**
 - [Data Golf](https://datagolf.com/terms-and-conditions) allows "personal, non-commercial use" and no redistribution, so it is **BLOCKED** for public use.
@@ -146,7 +149,7 @@ This section is the canonical public-deployment rights view. It supersedes earli
 | Scottie · Sportradar Golf trial | ALLOWED until trial end, then §7.4 | BLOCKED | BLOCKED for Sportradar-derived fixtures | BLOCKED | BLOCKED |
 | Texans · synthetic fixtures | ALLOWED | — | ALLOWED, labelled | ALLOWED | DEMO ONLY |
 | Scottie · synthetic fixtures | ALLOWED | — | ALLOWED, labelled | ALLOWED | DEMO ONLY |
-| Texans · BALLDONTLIE (not integrated) | Not integrated | LIKELY (league rights disclaimed) | — | LIKELY (terms permit AI use) | Candidate only |
+| Texans · BALLDONTLIE (not integrated) | Not integrated | UNRESOLVED (provider permits; upstream sources unnamed) | — | UNRESOLVED (provider permits AI use; upstream rights unresolved) | Candidate only |
 | Texans · nflverse (not integrated) | Not integrated | UNRESOLVED | — | UNRESOLVED | Not selected |
 | Wikinews archive (CC BY 2.5) | ALLOWED | ALLOWED with attribution (archival, not current news) | ALLOWED | ALLOWED with attribution | ALLOWED |
 | Reviewed Texans news | Operator-reviewed only | BLOCKED (site terms) | BLOCKED | BLOCKED | BLOCKED |
