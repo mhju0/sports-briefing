@@ -51,6 +51,7 @@ def derive_news_candidates(topics: list[dict[str, Any]], *, as_of: datetime) -> 
                 ("player", topic["subject_name"]),
                 ("effective_date", topic["effective_date"]),
             ) + ((("designation", "designated for return"),) if qualifier == "designated_for_return" else ()),
+            data_mode="demo" if synthetic else "provider",
         ))
     # A single latest development keeps news from filling both Texans slots.
     return sorted(

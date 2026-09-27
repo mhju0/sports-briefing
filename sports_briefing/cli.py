@@ -50,6 +50,7 @@ from .golf.storage import initialize_golf_database, persist_golf_fetch, inspect_
 from .news.evidence import EvidenceError, load_batch
 from .news.storage import inspect_news_state, persist_reviewed_batch
 from .news.wikinews import fetch_article
+from .source_policy import PUBLIC_MODE_ENV, public_mode_from_env
 
 
 LOGGER = logging.getLogger("sports_briefing")
@@ -61,6 +62,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
     try:
+        public_mode = public_mode_from_env()
+        if args.command == "ingest" and args.entity in ("texans", "scheffler") and public_mode:
+            raise ValueError(f"Sportradar ingestion is disabled when {PUBLIC_MODE_ENV}=true")
         if args.command == "ingest":
             result = _ingest_arsenal(args) if args.entity == "arsenal" else _ingest_texans(args) if args.entity == "texans" else _ingest_scheffler(args)
         elif args.command == "import-news":
@@ -92,6 +96,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 args.db,
                 as_of=args.as_of,
                 hide_results=not args.show_results,
+                public_mode=public_mode,
             )
             LOGGER.info(
                 "timeline_generated as_of=%s items=%s",

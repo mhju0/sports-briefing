@@ -28,6 +28,22 @@ Milestone 6's source-independent implementation is complete; its current-news ac
 
 Milestone 7 adds optional, verified summary prose after deterministic ranking. It includes a spoiler-aware evidence boundary, a cache keyed by evidence, prompt and model, a versioned prompt contract, and an offline evaluation set. No LLM provider is integrated; the timeline always falls back to its templates. See [M7 synthesis boundary and evaluation](docs/milestone-7.md).
 
+## Public/demo status
+
+Provider integrations are implemented and tested locally. Public deployment uses only sources with confirmed redistribution rights; restricted/evaluation-only sources are represented with explicitly labelled synthetic demo data. Nothing is deployed, and no source is currently cleared for public display of timeline items (see the [rights matrix](docs/feasibility.md#public-deployment-rights-checked-2026-09-27)).
+
+Public mode is an explicit server setting, never a client parameter: `SPORTS_BRIEFING_PUBLIC_MODE=true` (unset or `false` keeps local development behavior; any other value fails startup). Source-rights eligibility is applied when candidates are loaded, before the unchanged ranking and two-per-entity cap. In public mode:
+
+- **Arsenal** shows no items and is listed in `unavailable_entities`, because football-data.org public display is unresolved. `/briefings/arsenal` returns 404.
+- **Texans and Scottie** never read Sportradar data. They show synthetic demo candidates generated in code relative to the evaluation day and passed through the existing freshness rules. `/briefings/texans` returns 404. Synthetic Texans news evidence is kept; reviewed Texans news is dropped.
+- **Wikinews** has no timeline candidate path today, so it contributes nothing. A future Wikinews candidate would need an explicit public-mode allowance with its attribution.
+- `ingest texans` and `ingest scheffler` fail before any request. The provider code stays for local use.
+- `GET /meta` reports `public_mode`, the API version and each entity's source (`provider`, `demo` or `unavailable`).
+
+Every demo item carries `data_mode: "demo"`, source provider `synthetic-demo`, an attribution that states it is synthetic, a title ending in "(demo)" and a summary starting "Demo data:". Ranking never reads `data_mode`. A client that shows timeline items must render a visible "Demo data" label for such items and must not describe them as live, current or latest. The iPhone app remains Arsenal-only and reads `/briefings/arsenal`, so in public mode it shows its existing "no briefing" state.
+
+No database seeding command exists: demo data never touches SQLite, so it cannot collide with provider rows and nothing is seeded at startup.
+
 ## Run Milestone 1
 
 Use Python 3.11+ from this directory. Export your football-data.org token as `FOOTBALL_DATA_API_KEY`; see [setup and behavior](docs/milestone-1.md) for safe credential entry, data limits and debugging.

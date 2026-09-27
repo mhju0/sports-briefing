@@ -12,6 +12,7 @@ from .briefing import BriefingError, build_arsenal_briefing
 from .cli import DEFAULT_DATABASE
 from .storage import StorageError
 from .nfl.briefing import build_texans_briefing
+from .source_policy import entity_sources, public_mode_from_env
 from .timeline import TimelineError, build_home_timeline
 
 
@@ -20,6 +21,12 @@ LOGGER = logging.getLogger("sports_briefing.api")
 
 class HealthResponse(BaseModel):
     status: str
+
+
+class MetaResponse(BaseModel):
+    public_mode: bool
+    version: str
+    entities: dict[str, str]
 
 
 class EntityResponse(BaseModel):
@@ -175,6 +182,7 @@ class TimelineItemResponse(BaseModel):
     source: TimelineSourceResponse
     result_hidden: bool | None = None
     result: ResultResponse | None = None
+    data_mode: str | None = None
 
 
 class TimelineResponse(BaseModel):
@@ -184,12 +192,17 @@ class TimelineResponse(BaseModel):
     unavailable_entities: list[str]
 
 
-def create_app(database: Path = DEFAULT_DATABASE) -> FastAPI:
+def create_app(database: Path = DEFAULT_DATABASE, *, public_mode: bool | None = None) -> FastAPI:
+    public = public_mode_from_env() if public_mode is None else public_mode
     app = FastAPI(title="Sports Briefing", version="0.2.0")
 
     @app.get("/health", response_model=HealthResponse)
     def health() -> HealthResponse:
         return HealthResponse(status="ok")
+
+    @app.get("/meta", response_model=MetaResponse)
+    def meta() -> MetaResponse:
+        return MetaResponse(public_mode=public, version=app.version, entities=entity_sources(public))
 
     @app.get(
         "/briefings/arsenal",
@@ -199,6 +212,8 @@ def create_app(database: Path = DEFAULT_DATABASE) -> FastAPI:
     def arsenal_briefing(
         hide_results: bool = Query(default=True),
     ) -> ArsenalBriefingResponse:
+        if public:
+            raise HTTPException(status_code=404, detail="Arsenal briefing is not available in public mode.")
         try:
             briefing = build_arsenal_briefing(database, hide_results=hide_results)
             return _project_briefing(briefing, hide_results=hide_results)
@@ -229,6 +244,8 @@ def create_app(database: Path = DEFAULT_DATABASE) -> FastAPI:
 
     @app.get("/briefings/texans", response_model=TexansBriefingResponse)
     def texans_briefing() -> TexansBriefingResponse:
+        if public:
+            raise HTTPException(status_code=404, detail="Texans briefing is not available in public mode.")
         try:
             return _project_texans_briefing(build_texans_briefing(database))
         except StorageError as exc:
@@ -278,7 +295,9 @@ def create_app(database: Path = DEFAULT_DATABASE) -> FastAPI:
             normalized_as_of = as_of.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
         try:
             return TimelineResponse.model_validate(
-                build_home_timeline(database, as_of=normalized_as_of, hide_results=hide_results)
+                build_home_timeline(
+                    database, as_of=normalized_as_of, hide_results=hide_results, public_mode=public
+                )
             )
         except (sqlite3.Error, OSError, StorageError) as exc:
             LOGGER.exception("timeline_read_failed stage=persistence")

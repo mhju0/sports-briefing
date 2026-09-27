@@ -59,6 +59,8 @@ class TimelineCandidate:
     # Structured facts that the summary template renders, as (fact_id, value).
     # Synthesis evidence only: never projected, never used for ranking.
     summary_facts: tuple[tuple[str, str], ...] = ()
+    # "demo" marks labelled synthetic data. Projected for clients; never used for ranking.
+    data_mode: str = "provider"
 
     @property
     def reason(self) -> str:
@@ -100,6 +102,7 @@ def build_home_timeline(
     hide_results: bool = True,
     limit_per_entity: int = 2,
     synthesis: SynthesisProfile | None = None,
+    public_mode: bool = False,
 ) -> dict[str, Any]:
     evaluation_time = (
         _parse_timestamp(as_of, "timeline as-of time")
@@ -113,19 +116,29 @@ def build_home_timeline(
 
     candidates: list[TimelineCandidate] = []
     unavailable: list[str] = []
-    for entity_id, loader in (
-        ("arsenal", load_arsenal_timeline_candidates),
-        ("texans", load_texans_timeline_candidates),
-        ("scheffler", load_golf_timeline_candidates),
-    ):
-        try:
-            candidates.extend(loader(database, evaluation_time, hide_results=hide_results))
-        except (StorageError, sqlite3.Error, OSError) as exc:
-            if _is_missing_state(entity_id, exc):
-                unavailable.append(entity_id)
-                continue
-            raise
-    candidates.extend(load_news_timeline_candidates(database, evaluation_time, hide_results=hide_results))
+    if public_mode:
+        from .demo import load_demo_scheffler_candidates, load_demo_texans_candidates
+
+        # Source-rights eligibility happens here, before ranking: restricted
+        # provider loaders are never called and only synthetic news is kept.
+        unavailable.append("arsenal")
+        candidates.extend(load_demo_texans_candidates(evaluation_time, hide_results=hide_results))
+        candidates.extend(load_demo_scheffler_candidates(evaluation_time, hide_results=hide_results))
+    else:
+        for entity_id, loader in (
+            ("arsenal", load_arsenal_timeline_candidates),
+            ("texans", load_texans_timeline_candidates),
+            ("scheffler", load_golf_timeline_candidates),
+        ):
+            try:
+                candidates.extend(loader(database, evaluation_time, hide_results=hide_results))
+            except (StorageError, sqlite3.Error, OSError) as exc:
+                if _is_missing_state(entity_id, exc):
+                    unavailable.append(entity_id)
+                    continue
+                raise
+    news = load_news_timeline_candidates(database, evaluation_time, hide_results=hide_results)
+    candidates.extend(item for item in news if not public_mode or item.data_mode == "demo")
     if any(item.entity_id == "texans" for item in candidates) and "texans" in unavailable:
         unavailable.remove("texans")
     ranked = rank_candidates(
@@ -172,6 +185,8 @@ def _project_candidate(candidate: TimelineCandidate) -> dict[str, Any]:
         projected["result_hidden"] = True
     if candidate.result is not None:
         projected["result"] = candidate.result
+    if candidate.data_mode == "demo":
+        projected["data_mode"] = "demo"
     return projected
 
 
