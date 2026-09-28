@@ -97,3 +97,7 @@ Provider ingestion is optional and local-only. Copy `.env.example` to `.env` (gi
 This is a separate repository from FullCourt. No FullCourt code is copied.
 
 The canonical current roadmap is [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md); detailed historical records also exist under `.scratch/`. No external tracker is configured.
+
+## License
+
+Licensed under the [MIT License](LICENSE). The license covers this repository's source code. Third-party sports data remains subject to its respective provider terms and is not relicensed by this project; see the [rights matrix](docs/feasibility.md#public-deployment-rights-checked-2026-09-27).

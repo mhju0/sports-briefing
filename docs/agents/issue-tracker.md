@@ -71,7 +71,7 @@ Three separate bars (2026-09-28). Meeting one does not imply the next.
 - [x] README covers purpose, entities, provider/demo/unavailable status, architecture, local setup and tests.
 - [x] Fresh clone installs from `requirements-dev.txt` and passes the offline suite and public-mode demo without credentials.
 - [x] Minimal CI workflow (`.github/workflows/ci.yml`), offline, no secrets. Not yet run on a host, because no remote exists.
-- [ ] Licence choice (owner decision; none is declared).
+- [x] MIT licence for the source code (`LICENSE`, 2026-09-28); third-party data is not relicensed.
 - [ ] Remote created and repository published (owner action).
 
 **Deployment ready** (not started; nothing deployed):
