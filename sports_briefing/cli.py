@@ -55,6 +55,12 @@ from .source_policy import PUBLIC_MODE_ENV, public_mode_from_env
 
 LOGGER = logging.getLogger("sports_briefing")
 DEFAULT_DATABASE = Path("data/sports_briefing.sqlite3")
+DATABASE_ENV = "SPORTS_BRIEFING_DATABASE"
+
+
+def default_database() -> Path:
+    # A deployed server keeps mutable state outside the checkout; local runs keep the relative default.
+    return Path(os.environ.get(DATABASE_ENV) or DEFAULT_DATABASE)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -69,7 +75,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             result = _ingest_arsenal(args) if args.entity == "arsenal" else _ingest_texans(args) if args.entity == "texans" else _ingest_scheffler(args)
         elif args.command == "import-news":
             batch = load_batch(str(args.input))
-            if batch.mode == "synthetic" and args.db.resolve() == DEFAULT_DATABASE.resolve():
+            if batch.mode == "synthetic" and args.db.resolve() == default_database().resolve():
                 raise ValueError("synthetic evidence requires an isolated database, not the default database")
             result = {"entity": "texans", "evidence_mode": batch.mode,
                       "outcomes": persist_reviewed_batch(args.db, batch, observed_at=_now())}
@@ -411,7 +417,7 @@ def _parser() -> argparse.ArgumentParser:
     ingest.add_argument("entity", choices=("arsenal", "texans", "scheffler"))
     ingest.add_argument("--from", dest="date_from", type=_iso_date)
     ingest.add_argument("--to", dest="date_to", type=_iso_date, help="exclusive end date")
-    ingest.add_argument("--db", type=Path, default=DEFAULT_DATABASE)
+    ingest.add_argument("--db", type=Path, default=default_database())
     ingest.add_argument("--timeout", type=_positive_float, default=15.0)
     ingest.add_argument("--season", type=int)
     ingest.add_argument("--season-type", choices=("PRE", "REG", "PST"))
@@ -419,13 +425,13 @@ def _parser() -> argparse.ArgumentParser:
 
     briefing = subparsers.add_parser("briefing", help="derive a deterministic briefing")
     briefing.add_argument("entity", choices=("arsenal", "texans"))
-    briefing.add_argument("--db", type=Path, default=DEFAULT_DATABASE)
+    briefing.add_argument("--db", type=Path, default=default_database())
     briefing.add_argument("--as-of", help="ISO-8601 timestamp; defaults to the last successful fetch")
     briefing.add_argument("--hide-results", action="store_true")
 
     inspect = subparsers.add_parser("inspect", help="inspect normalized persisted state")
     inspect.add_argument("entity", choices=("arsenal", "texans", "scheffler", "texans-news", "news"))
-    inspect.add_argument("--db", type=Path, default=DEFAULT_DATABASE)
+    inspect.add_argument("--db", type=Path, default=default_database())
 
     import_news = subparsers.add_parser("import-news", help="import manually reviewed Texans evidence JSON")
     import_news.add_argument("entity", choices=("texans",))
@@ -440,7 +446,7 @@ def _parser() -> argparse.ArgumentParser:
     timeline = subparsers.add_parser(
         "timeline", help="derive the ranked Arsenal + Texans + Scottie home timeline"
     )
-    timeline.add_argument("--db", type=Path, default=DEFAULT_DATABASE)
+    timeline.add_argument("--db", type=Path, default=default_database())
     timeline.add_argument(
         "--as-of", help="timezone-aware ISO-8601 evaluation time; current UTC by default"
     )

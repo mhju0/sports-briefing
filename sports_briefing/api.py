@@ -9,7 +9,7 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 
 from .briefing import BriefingError, build_arsenal_briefing
-from .cli import DEFAULT_DATABASE
+from .cli import default_database
 from .storage import StorageError
 from .nfl.briefing import build_texans_briefing
 from .source_policy import entity_sources, public_mode_from_env
@@ -192,7 +192,8 @@ class TimelineResponse(BaseModel):
     unavailable_entities: list[str]
 
 
-def create_app(database: Path = DEFAULT_DATABASE, *, public_mode: bool | None = None) -> FastAPI:
+def create_app(database: Path | None = None, *, public_mode: bool | None = None) -> FastAPI:
+    database = default_database() if database is None else database
     public = public_mode_from_env() if public_mode is None else public_mode
     app = FastAPI(title="Sports Briefing", version="0.2.0")
 

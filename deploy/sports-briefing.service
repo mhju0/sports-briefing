@@ -1,0 +1,28 @@
+# Sports Briefing API: one Uvicorn process behind Caddy, bound to localhost.
+# Conventions (change consistently if needed): service user `sports-briefing`,
+# checkout /opt/sports-briefing, state /var/lib/sports-briefing.
+[Unit]
+Description=Sports Briefing API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=sports-briefing
+Group=sports-briefing
+WorkingDirectory=/opt/sports-briefing
+# Non-secret settings only; see sports-briefing.env.example.
+EnvironmentFile=/etc/sports-briefing.env
+# A single process: SQLite is single-node and the web path is read-only.
+ExecStart=/opt/sports-briefing/.venv/bin/python -m uvicorn sports_briefing.api:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/sports-briefing
+
+[Install]
+WantedBy=multi-user.target

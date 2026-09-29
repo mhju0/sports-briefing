@@ -178,7 +178,7 @@ Provider ingestion is optional and local-only. Optional credential names are doc
 
 ## Testing
 
-The repository currently has **195 offline tests**.
+The repository currently has **198 offline tests**.
 
 ```bash
 .venv/bin/python -m unittest discover -s tests
@@ -206,7 +206,7 @@ Built today:
 
 Intentionally not complete yet:
 
-- no hosted deployment or live demo URL
+- no hosted deployment or live demo URL (a single-host deployment package and runbook are prepared in [`deploy/`](deploy/README.md))
 - no public provider-backed Texans or Scottie data
 - football-data.org public-use confirmation is still pending
 - no production LLM integration

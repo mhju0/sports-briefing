@@ -1,0 +1,14 @@
+[Unit]
+Description=Sports Briefing SQLite backup
+
+[Service]
+Type=oneshot
+User=sports-briefing
+Group=sports-briefing
+EnvironmentFile=/etc/sports-briefing.env
+ExecStart=/opt/sports-briefing/deploy/backup.sh
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/sports-briefing

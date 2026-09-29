@@ -1,0 +1,10 @@
+# Replace briefing.example.com with a hostname whose DNS points at this server.
+# Caddy obtains and renews the HTTPS certificate automatically.
+briefing.example.com {
+	reverse_proxy 127.0.0.1:8000
+	header {
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+}

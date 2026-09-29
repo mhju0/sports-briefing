@@ -14,7 +14,7 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from sports_briefing.api import create_app
-from sports_briefing.cli import main
+from sports_briefing.cli import DATABASE_ENV, default_database, main
 from sports_briefing.demo import load_demo_scheffler_candidates, load_demo_texans_candidates
 from sports_briefing.football_data import normalize_matches
 from sports_briefing.news.evidence import normalize_batch
@@ -299,6 +299,40 @@ class IngestionGuardTests(unittest.TestCase):
         self.assertTrue(items)
         self.assertTrue(all(item["data_mode"] == "demo" for item in items))
 
+
+
+class DatabasePathTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.database = Path(self.temp.name) / "server.sqlite3"
+        news = json.loads((FIXTURES / "news" / "synthetic-placement.json").read_text(encoding="utf-8"))
+        persist_reviewed_batch(self.database, normalize_batch(news), observed_at="2026-09-25T11:00:00Z")
+        self.as_of = "2026-09-25T11:30:00Z"
+
+    def test_local_default_is_unchanged_without_the_setting(self) -> None:
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(default_database(), Path("data/sports_briefing.sqlite3"))
+
+    def test_setting_moves_the_default_for_api_and_cli(self) -> None:
+        with patch.dict(os.environ, {DATABASE_ENV: str(self.database), PUBLIC_MODE_ENV: "true"}):
+            items = TestClient(create_app()).get(f"/timeline?as_of={self.as_of}").json()["items"]
+            stdout = io.StringIO()
+            with redirect_stdout(stdout), redirect_stderr(io.StringIO()):
+                code = main(["timeline", "--as-of", self.as_of])
+        self.assertEqual(code, 0)
+        # The synthetic news topic exists only in the configured database.
+        self.assertIn("news:", " ".join(item["id"] for item in items))
+        self.assertEqual([item["id"] for item in json.loads(stdout.getvalue())["items"]],
+                         [item["id"] for item in items])
+
+    def test_synthetic_import_guard_protects_the_configured_database(self) -> None:
+        with patch.dict(os.environ, {DATABASE_ENV: str(self.database)}), \
+                redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()) as stderr:
+            code = main(["import-news", "texans", "--input",
+                         str(FIXTURES / "news" / "synthetic-placement.json"), "--db", str(self.database)])
+        self.assertEqual(code, 1)
+        self.assertIn("isolated database", stderr.getvalue())
 
 if __name__ == "__main__":
     unittest.main()

@@ -70,15 +70,15 @@ Three separate bars (2026-09-28). Meeting one does not imply the next.
 - [x] No secrets in the tree or reachable history (local `gitleaks` 8.30.1 plus pattern scans, 2026-09-28); `.env` is ignored and was never committed.
 - [x] README covers purpose, entities, provider/demo/unavailable status, architecture, local setup and tests.
 - [x] Fresh clone installs from `requirements-dev.txt` and passes the offline suite and public-mode demo without credentials.
-- [x] Minimal CI workflow (`.github/workflows/ci.yml`), offline, no secrets. Not yet run on a host, because no remote exists.
+- [x] Minimal CI workflow (`.github/workflows/ci.yml`), offline, no secrets; passing on GitHub Actions.
 - [x] MIT licence for the source code (`LICENSE`, 2026-09-28); third-party data is not relicensed.
-- [ ] Remote created and repository published (owner action).
+- [x] Remote created and repository published (github.com/mhju0/sports-briefing, 2026-09-28).
 
-**Deployment ready** (not started; nothing deployed):
+**Deployment ready** (deployment package prepared in [`deploy/`](../../deploy/README.md), 2026-09-29; infrastructure not yet provisioned, nothing deployed):
 - [ ] football-data.org written confirmation for public display and caching, or Arsenal stays unavailable.
 - [ ] Sportradar trial dates and certificate-of-destruction question closed.
 - [ ] Host, process supervision, domain and HTTPS configured.
-- [ ] SQLite backup and a rehearsed restore.
+- [ ] SQLite backup and a rehearsed restore (script and procedure rehearsed locally; not yet on a server).
 - [ ] Health monitoring and alerting.
 
 **M7 production ready** (not started beyond offline slices 1–3):
