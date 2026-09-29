@@ -4,7 +4,7 @@ Durable rules for coding agents in this repository. Architecture lives in `docs/
 
 ## Before you start
 - Read `docs/agents/issue-tracker.md` before any milestone work. Treat it and the repository as authoritative over pasted handoffs, and report discrepancies instead of silently adapting.
-- Engineering choices follow the README's "Project goals & engineering principles". Prefer the smallest design whose tradeoffs you can defend, and don't add technologies without a product need.
+- Engineering choices follow the design principles in the README's "How it works" section. Prefer the smallest design whose tradeoffs you can defend, and don't add technologies without a product need.
 
 ## Invariants
 - Structured providers and deterministic domain logic are the source of truth. An LLM never decides factual state, freshness, eligibility, ranking, item selection or ordering; it may only phrase text for already-selected items, with a template fallback.

@@ -10,7 +10,7 @@ A continuously updated personal sports timeline for Arsenal, Houston Texans, and
 
 `SQLite → domain-specific normalized candidates → deterministic shared ranking → CLI / HTTP`
 
-Provider normalization stays in provider/domain modules. Structured providers remain authoritative for schedules, results, and availability. Ranking uses explicit LIVE, IMMINENT, MEANINGFUL_CHANGE, RECENT_RESULT, ROUTINE precedence with deterministic tie-breaking. Provenance is inspectable; unchanged refetches cannot create freshness. The SwiftUI proof remains Arsenal-only. Source-rights eligibility is upstream of ranking: explicit server-side public mode (`SPORTS_BRIEFING_PUBLIC_MODE=true`) excludes restricted provider candidates at loading and substitutes labelled synthetic demo candidates (`data_mode: "demo"`) for Texans/Scottie; see the README's Public/demo status.
+Provider normalization stays in provider/domain modules. Structured providers remain authoritative for schedules, results, and availability. Ranking uses explicit LIVE, IMMINENT, MEANINGFUL_CHANGE, RECENT_RESULT, ROUTINE precedence with deterministic tie-breaking. Provenance is inspectable; unchanged refetches cannot create freshness. The SwiftUI proof remains Arsenal-only. Source-rights eligibility is upstream of ranking: explicit server-side public mode (`SPORTS_BRIEFING_PUBLIC_MODE=true`) excludes restricted provider candidates at loading and substitutes labelled synthetic demo candidates (`data_mode: "demo"`) for Texans/Scottie; see the README's Public mode section.
 
 ## Milestone status
 
