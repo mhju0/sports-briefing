@@ -11,6 +11,7 @@ import unittest
 from contextlib import redirect_stdout
 from unittest import mock
 
+from sports_briefing.demo import load_demo_texans_candidates, load_demo_scheffler_candidates
 from sports_briefing.arsenal_timeline import load_arsenal_timeline_candidates
 from sports_briefing.football_data import normalize_matches
 from sports_briefing.storage import initialize_database, persist_successful_fetch
@@ -284,6 +285,27 @@ class GenerationTests(SynthesisDatabaseTest):
         self.assertIsNotNone(self.generate(candidate, kept))
 
 
+    def test_public_demo_disclosure_survives_generation_and_cache_read_in_both_modes(self) -> None:
+        for hidden in (True, False):
+            candidates = (load_demo_texans_candidates(_parse_timestamp(AS_OF, "as_of"), hide_results=hidden)
+                          + load_demo_scheffler_candidates(_parse_timestamp(AS_OF, "as_of"), hide_results=hidden))
+            for candidate in candidates:
+                with self.subTest(hidden=hidden, candidate=candidate.stable_id):
+                    kept = output((candidate.summary, ["baseline_summary"]))
+                    dropped = output((candidate.summary.removeprefix("Demo data: "), ["baseline_summary"]))
+                    self.assertIsNone(self.generate(candidate, dropped, hide_results=hidden))
+                    self.assertEqual(self.generate(candidate, kept, hide_results=hidden), candidate.summary)
+                    self.assertEqual(self.summaries(candidate, hide_results=hidden), [candidate.summary])
+                    # A corrupted or older cache row must fall back on read too.
+                    with sqlite3.connect(self.database) as connection:
+                        connection.execute(
+                            "UPDATE summary_syntheses SET output_json = ? WHERE stable_id = ? AND spoiler_mode = ?",
+                            (dropped, candidate.stable_id, "hide_results" if hidden else "show_results"),
+                        )
+                    self.assertEqual(self.summaries(candidate, hide_results=hidden), [candidate.summary])
+                    self.assertIsNone(self.generate(candidate, dropped, hide_results=hidden))
+
+
 class SpoilerTests(SynthesisDatabaseTest):
     def arsenal_result(self, *, hide_results: bool) -> TimelineCandidate:
         return TimelineCandidate(
@@ -413,7 +435,7 @@ class CacheIdentityTests(SynthesisDatabaseTest):
 
 class PromptContractTests(SynthesisDatabaseTest):
     def test_prompt_version_is_explicit_and_is_the_default_cache_identity(self) -> None:
-        self.assertEqual(PROMPT_VERSION, "summary-en-v2")
+        self.assertEqual(PROMPT_VERSION, "summary-en-v3")
         self.assertEqual(SynthesisProfile(model_id="fake-model-1").prompt_version, PROMPT_VERSION)
         candidate = texans_game()
         self.generate(candidate, profile=SynthesisProfile(model_id="fake-model-1"))
@@ -449,6 +471,7 @@ class PromptContractTests(SynthesisDatabaseTest):
             "Never judge importance, relevance or ranking",
             "In hide_results mode, never state or hint at a result",
             'starts with "Synthetic example:"',
+            'starts with "Demo data:"',
             "Return only JSON",
         ]
         for phrase in required:

@@ -89,7 +89,7 @@ Three separate bars (2026-09-28). Meeting one does not imply the next.
 
 ## Deferred scope
 
-Broad crawling/news aggregation, social/reporters, LLM synthesis/ranking, vector clustering, new followed entities, personalization, notifications, scheduled/background refresh, deployment/production, and UI expansion. M7 covers only cached summary replacement and its evaluation; other later work remains unnumbered.
+Broad crawling/news aggregation, social/reporters, real-model synthesis, vector clustering, new followed entities, personalization, notifications, scheduled/background refresh, deployment/production, and UI expansion. M7 covers only cached summary replacement and its evaluation; other later work remains unnumbered. LLM ranking is prohibited by the deterministic-core invariant, not deferred.
 
 ## Verification snapshot
 
@@ -98,7 +98,7 @@ M6 starting point (2026-09-26): `main`, clean at `0884b9c0d234091cb78e6bdb30ca8b
 M6 offline verification: **18 focused / 136 complete tests passing**; compile and whitespace checks passed. A temporary copy of the actual database retained exact contents of all 12 original tables. Two synthetic documents produced one topic/two links; identical import changed no rows. One qualifier follow-up produced revision 2/three links exactly once. Separate-process CLI was deterministic; loopback HTTP returned 200 for both spoiler modes. Main application data was untouched. This is synthetic/offline acceptance only, not permission or live-source ingestion proof. Final implementation commit is the commit recording this snapshot; see Git history.
 
 
-P2 verification (2026-09-26; baseline `dee26cf`): **8 P2 / 26 combined M6 / 144 complete tests passing**; compile/whitespace checks passed. One licensed Wikinews article fetched twice: 1 document/topic/link at revision 1; second run changed no news rows. Date-only 2016 publication was not replaced by its 2026 edit time or current observation. All 12 existing structured tables remained equal in a copied DB; original DB untouched. CLI repeated output deterministic, loopback HTTP 200 in both spoiler modes, zero historical news items. Real multi-document grouping and eligible source-backed candidate remain open; synthetic P1 scenarios are not relabeled live. The commit containing this snapshot records the bounded P2 implementation; M3/M5 remain acceptance-open and M7 planned.
+P2 verification (2026-09-26; baseline `dee26cf`): **8 P2 / 26 combined M6 / 144 complete tests passing**; compile/whitespace checks passed. One licensed Wikinews article fetched twice: 1 document/topic/link at revision 1; second run changed no news rows. Date-only 2016 publication was not replaced by its 2026 edit time or current observation. All 12 existing structured tables remained equal in a copied DB; original DB untouched. CLI repeated output deterministic, loopback HTTP 200 in both spoiler modes, zero historical news items. Real multi-document grouping and eligible source-backed candidate remain open; synthetic P1 scenarios are not relabeled live. The commit containing this snapshot records the bounded P2 implementation; M3/M5 remained acceptance-open and M7 was planned at this historical snapshot; see the current milestone table for present status.
 
 - M6-P2: licensed archival evidence is valid source proof but not a continuing news feed. Pinned reviewed normalization must fail closed when source content changes. Date-only publication remains date-only; provider edit time is never a substitute.
 

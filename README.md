@@ -178,7 +178,7 @@ Provider ingestion is optional and local-only. Optional credential names are doc
 
 ## Testing
 
-The repository currently has **198 offline tests**.
+The repository currently has **212 offline tests**.
 
 ```bash
 .venv/bin/python -m unittest discover -s tests

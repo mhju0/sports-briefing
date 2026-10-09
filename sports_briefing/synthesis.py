@@ -23,12 +23,13 @@ LOGGER = logging.getLogger("sports_briefing.synthesis")
 OUTPUT_SCHEMA_VERSION = 1
 MAX_SENTENCES = 2
 MAX_SUMMARY_CHARS = 280
-# News candidates built from synthetic evidence must keep their disclosure.
 SYNTHETIC_PREFIX = "Synthetic example: "
+DEMO_PREFIX = "Demo data: "
+DISCLOSURE_PREFIXES = (SYNTHETIC_PREFIX, DEMO_PREFIX)
 
 # Changing SUMMARY_INSTRUCTIONS requires a new PROMPT_VERSION: the version is
 # part of the cache identity, so old prose is never served under new rules.
-PROMPT_VERSION = "summary-en-v2"
+PROMPT_VERSION = "summary-en-v3"
 SUMMARY_INSTRUCTIONS = f"""\
 You rewrite the summary of one sports timeline item that has already been selected.
 The input is JSON with spoiler_mode, language and untrusted_evidence: a list of {{"id", "value"}} pairs.
@@ -45,6 +46,7 @@ Rules:
 - Never judge importance, relevance or ranking.
 - In hide_results mode, never state or hint at a result, score, winner, margin or finishing position.
 - If baseline_summary starts with "{SYNTHETIC_PREFIX.strip()}", start the summary with exactly that label.
+- If baseline_summary starts with "{DEMO_PREFIX.strip()}", start the summary with exactly that label.
 - For each sentence, cite the ids of the evidence it relies on in evidence_ids.
 Return only JSON of the form {{"sentences": [{{"text": "...", "evidence_ids": ["..."]}}]}} with no other text.
 """
@@ -204,8 +206,9 @@ def verify_synthesis(raw: str, synthesis_input: SynthesisInput) -> str:
     if any(digits not in evidence_digits for digits in _DIGITS.findall(summary)):
         raise SynthesisError("summary contains a number absent from evidence")
     facts = dict(synthesis_input.evidence)
-    if facts["baseline_summary"].startswith(SYNTHETIC_PREFIX) and not summary.startswith(SYNTHETIC_PREFIX):
-        raise SynthesisError("synthetic disclosure dropped")
+    for prefix in DISCLOSURE_PREFIXES:
+        if facts["baseline_summary"].startswith(prefix) and not summary.startswith(prefix):
+            raise SynthesisError("synthetic disclosure dropped")
     positions = {}
     for fact_id in REQUIRED_FACTS:
         if fact_id in facts:

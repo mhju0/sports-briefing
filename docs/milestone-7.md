@@ -12,7 +12,7 @@ M7 asks whether generated prose improves the timeline enough to justify a model,
 - **Verified cache with template fallback.**
   - `apply_cached_summaries` only reads and never calls a model. A missing database, table or row, or a corrupt or incompatible row, keeps that candidate's template. Other candidates are unaffected.
   - `/timeline` and the CLI pass no synthesis profile, so their output is exactly the template output.
-- **Prompt contract.** `PROMPT_VERSION = "summary-en-v2"` and `SUMMARY_INSTRUCTIONS` in `sports_briefing/synthesis.py` are the one English contract.
+- **Prompt contract.** `PROMPT_VERSION = "summary-en-v3"` and `SUMMARY_INSTRUCTIONS` in `sports_briefing/synthesis.py` are the current English contract.
   - `build_prompt_request` returns a provider-neutral request. Evidence stays a separate list, labelled `untrusted_evidence`, and is never spliced into the instructions.
   - `SynthesisProfile.prompt_version` defaults to this version.
   - Changing the instructions requires a new version, which also invalidates cached prose.
@@ -47,7 +47,7 @@ The output is JSON `{"sentences": [{"text", "evidence_ids"}]}` with 1–2 senten
 - **Structure:** the output is not strict JSON or has the wrong shape; a sentence is empty; the summary is too long.
 - **Citations:** a sentence cites nothing, or cites an ID absent from the input.
 - **Numbers:** a digit run is not in the evidence.
-- **Disclosure:** the `Synthetic example: ` label is dropped.
+- **Disclosure:** an existing `Synthetic example: ` or `Demo data: ` prefix is dropped.
 - **Required facts:** a `previous_status`, `new_status` or `designation` value is missing (case-insensitive whole-phrase match), or `previous_status` does not come before `new_status`.
 - **Winner:** a team other than `winner` is the subject of won/wins/beat/beats/defeated/defeats. The full name and the name without an FC/AFC affix both count.
 - **No result evidence** (hidden mode, or show mode without a structured result):
@@ -73,11 +73,13 @@ Entries are verified on write and on read.
 
 These facts are not projected by the API and play no part in ranking. The prompt moved to `summary-en-v2`, so v1 cache entries are never served under the new contract.
 
-**Deterministic guarantees now:**
-- a required status or designation value survives verbatim;
-- a status transition is not reversed;
-- a listed non-winning team is never the subject of a win verb;
-- outcome words and unseen score pairs are rejected wherever no structured result exists.
+**Deterministic checks now:**
+- required status and designation values appear as case-insensitive whole phrases;
+- the first matched previous-status phrase precedes the first new-status phrase;
+- explicitly listed adjacent non-winning-team and win-verb patterns are rejected;
+- outcome words absent from visible evidence and unseen score pairs are rejected wherever no structured result exists.
+
+These are lexical checks. They do not prove that every sentence describes the transition or winner correctly.
 
 **Still not guaranteed:**
 - semantic entailment, and wrong-winner phrasings outside `<team> <win verb>` (for example, "were beaten by");
@@ -135,6 +137,7 @@ Each case changed in slice 3 records why in its `revision` field.
 | --- | --- | --- | --- | --- |
 | Slice 2 (`summary-en-v1`) | 22 | 16 | 7 | 6 |
 | Slice 3 (`summary-en-v2`) | 24 | 13 | 3 | 11 |
+| Disclosure hardening (`summary-en-v3`, 2026-10-10) | 24 | 13 | 3 | 11 |
 
 How the slice 2 blind spots were resolved:
 - **Now rejected deterministically:**
@@ -186,3 +189,9 @@ The synthesis boundary's technical support is not permission. A source without v
 - structured Golf result facts (tie, score, position), if Golf result prose is wanted;
 - per-source transmission permission;
 - a human review pass over real model outputs.
+
+## Restart review on 2026-10-10
+
+Independent read-only review of the previous frozen commit `a60efba` found a disclosure gap: public demo candidates use `Demo data: `, while the synthesis verifier protected only `Synthetic example: `. An explicit synthesis profile could therefore serve a cached summary without the demo prefix. The current API and CLI supplied no profile, so their output remained template-only.
+
+The common write/read verifier now preserves either known prefix. The prompt contract moved to `summary-en-v3`, invalidating older-profile cache entries. Regression coverage uses actual Texans and Scottie demo candidates in both spoiler modes, including rejected generation, accepted cache roundtrip and fallback from a tampered cached row. The 24 hand-authored evaluation cases retain zero expectation mismatches and three sampled semantic blind spots. This is offline hardening, not evidence of real model quality or source transmission permission.

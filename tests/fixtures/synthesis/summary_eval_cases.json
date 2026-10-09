@@ -1,5 +1,5 @@
 {
-  "prompt_version": "summary-en-v2",
+  "prompt_version": "summary-en-v3",
   "note": "Hand-authored exemplar outputs, not model output. Candidate text and summary_facts follow current loader output; names come from repository fixtures. Non-evidence candidate fields are filled with placeholders by the runner because they never reach the model. 'revision' records how each case changed with the evidence contract.",
   "cases": [
     {
