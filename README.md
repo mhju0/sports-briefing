@@ -213,6 +213,8 @@ Intentionally not complete yet:
 
 For detailed milestone state, blockers, and future work, see [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md).
 
+The [October 10 restart report](docs/reports/2026-10-10-restart/index.html) explains the remaining choices, compares provider options, and includes ten interactive UI concepts. It is an offline planning artifact with synthetic data, not an integrated or deployed client.
+
 ## Documentation
 
 - [`docs/product-spec.md`](docs/product-spec.md) — product scope and behavior
