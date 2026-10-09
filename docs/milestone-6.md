@@ -73,7 +73,7 @@ Wikinews is archived/read-only following its [May 2026 closure](https://en.wikin
 
 ## P2 acceptance boundary
 
-One live publication can prove retrieval, provenance, persistence and identical-refetch behavior. It cannot prove two real publications describe the same development. Existing repeat/follow-up scenarios remain clearly synthetic. M6 cannot be closed on this single-document archival proof alone: the minimum remaining acceptance is a permitted real same-development pair, with timestamp precision sufficient to exercise qualifying candidate behavior honestly. This may use a separately authorized current vendor feed; it does not require a broad news platform. M3/M5 gates remain unchanged and M7 is not started.
+One live publication can prove retrieval, provenance, persistence and identical-refetch behavior. It cannot prove two real publications describe the same development. Existing repeat/follow-up scenarios remain clearly synthetic. M6 cannot be closed on this single-document archival proof alone: the minimum remaining acceptance is a permitted real same-development pair, with timestamp precision sufficient to exercise qualifying candidate behavior honestly. This may use a separately authorized current vendor feed; it does not require a broad news platform. M3/M5 gates remained unchanged and M7 had not started at this historical snapshot; see the tracker for current M7 state.
 
 
 ## P2 adapter behavior (extended by the P3 pair below)
@@ -107,7 +107,7 @@ Offline verification: **8 P2 / 26 combined M6 / 144 complete tests passed**. Tes
 
 ## P3: real grouping and remaining candidate gate
 
-Starting state: `main`, clean at `33e8dc91370af167f71e7dcd2735d1e537a375cb`; 26 focused M6 and 144 full offline tests passed. The remaining requirements were a real permitted same-development pair and a real qualifying current/recent candidate. No M3/M5 gate was retried or closed; M7 remains planned.
+Starting state: `main`, clean at `33e8dc91370af167f71e7dcd2735d1e537a375cb`; 26 focused M6 and 144 full offline tests passed. The remaining requirements were a real permitted same-development pair and a real qualifying current/recent candidate. No M3/M5 gate was retried or closed; M7 was planned at this historical snapshot.
 
 ### Bounded discovery and evidence classification
 
@@ -162,7 +162,7 @@ Both articles retain `published_at=NULL` and their distinct 2016 publication dat
 
 All rows in **12 preexisting structured tables** matched before/after in the proof copy and original application DB. The original DB was only read. Offline verification: **11 source-adapter / 29 combined M6 / 147 complete tests pass**; compile and whitespace checks pass. New tests exercise the real-shaped pair, initial versus repeat contribution, reverse date-only ordering, source mismatch rejection before writes, restart readback and P2 document compatibility. The P2 original normalized document, including metadata JSON, remains byte-equal to the prior implementation. No new schema, dependency, fixture fabrication, network-dependent test, LLM or ranker change was introduced. Three bounded discovery requests plus two pair-validation requests were made; no Sportradar/Guardian retry or SportsDataIO API call occurred.
 
-**M6 REMAINS OPEN — permitted real current/recent news-candidate acceptance.** Real grouping is closed. Current-source access is the immediate external prerequisite; provider normalization/attribution and any required supported-topic candidate mapping remain evidence-dependent engineering work. Do not label the entire milestone implementation-complete before that work is known. The smallest next action is rights-cleared, non-scrambled team-level NFL news access with a qualifying Texans IR-development publication; this targets existing topic/candidate semantics. M3/M5 gates remain open and M7 planned only.
+**M6 REMAINS OPEN — permitted real current/recent news-candidate acceptance.** Real grouping is closed. Current-source access is the immediate external prerequisite; provider normalization/attribution and any required supported-topic candidate mapping remain evidence-dependent engineering work. Do not label the entire milestone implementation-complete before that work is known. The smallest next action is rights-cleared, non-scrambled team-level NFL news access with a qualifying Texans IR-development publication; this targets existing topic/candidate semantics. M3/M5 gates remained open and M7 was planned at this historical snapshot; see the tracker for current M7 state.
 
 
 ## Status classification and reopen trigger (2026-09-26 audit)

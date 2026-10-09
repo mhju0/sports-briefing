@@ -1,0 +1,16 @@
+<div class="completion">
+  <article><span class="tag">IMPLEMENTED + TESTED</span><h3>A safer deployment check</h3><p>The smoke check now requires a nonempty, labelled demo timeline, hidden results by default, a valid reveal mode and blocked provider-only briefing routes.</p></article>
+  <article><span class="tag">IMPLEMENTED + TESTED</span><h3>Demo disclosure survives synthesis</h3><p>M7’s prompt moved to <code>summary-en-v3</code>. Verification now preserves the actual <code>Demo data:</code> label as well as the earlier synthetic-example label. Synthesis remains off in the public API.</p></article>
+  <article><span class="tag">IMPLEMENTED + TESTED</span><h3>Backup and restore checks tightened</h3><p>The backup helper and retention path were hardened and exercised with temporary SQLite files, including concurrent backup probes. This is local verification, not a server backup claim.</p></article>
+</div>
+<table class="comparison" aria-label="Completed and unfinished work">
+  <thead><tr><th>Area</th><th>Finished / fresh evidence</th><th>Still open</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Area"><strong>Engineering candidate</strong></td><td data-label="Finished / fresh evidence">Frozen commit <code>1b535a1</code>; 212 offline tests passed. Independent reviewer found no blocking issue on that exact source candidate.</td><td data-label="Still open">No hosted deployment. Real-data acceptance gates remain separate.</td></tr>
+    <tr><td data-label="Area"><strong>Local public API</strong></td><td data-label="Finished / fresh evidence">Loopback smoke passed: four demo items, both spoiler modes, Arsenal unavailable and provider briefing endpoints blocked. No provider credentials or database were needed.</td><td data-label="Still open">Actual public URL, HTTPS, host monitoring and server backup/restore.</td></tr>
+    <tr><td data-label="Area"><strong>M7 offline review</strong></td><td data-label="Finished / fresh evidence">29 focused tests; 24 hand-authored evaluation cases; 13 verifier accepts, 11 rejects, zero expectation mismatches. Offline slice review closed.</td><td data-label="Still open">Three sampled semantic blind spots remain. No real model, quality review or source-transmission permission.</td></tr>
+    <tr><td data-label="Area"><strong>Design review kit</strong></td><td data-label="Finished / fresh evidence">Ten rendered interactive concepts, local choice saving, Markdown/JSON export and responsive layouts. All preview sports content is synthetic.</td><td data-label="Still open">Choose one pattern. Connect a real client to the API and verify that implementation.</td></tr>
+    <tr><td data-label="Area"><strong>Source-permission preparation</strong></td><td data-label="Finished / fresh evidence">Tailored unsent requests for football-data.org, SportsDataIO and Sportradar are ready to review.</td><td data-label="Still open">Your approval before sending. Provider replies and account/trial facts are not available.</td></tr>
+  </tbody>
+</table>
+<p class="meta">Checks ran October 10, 2026. <a href="../../restart-engineering-2026-10-10.md">Exact engineering record</a> · <a href="../../provider-permission-requests.md">Review the unsent permission requests</a></p>

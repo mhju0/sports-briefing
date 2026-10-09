@@ -8,6 +8,7 @@ import sqlite3
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 
+from . import __version__
 from .briefing import BriefingError, build_arsenal_briefing
 from .cli import default_database
 from .storage import StorageError
@@ -195,7 +196,7 @@ class TimelineResponse(BaseModel):
 def create_app(database: Path | None = None, *, public_mode: bool | None = None) -> FastAPI:
     database = default_database() if database is None else database
     public = public_mode_from_env() if public_mode is None else public_mode
-    app = FastAPI(title="Sports Briefing", version="0.2.0")
+    app = FastAPI(title="Sports Briefing", version=__version__)
 
     @app.get("/health", response_model=HealthResponse)
     def health() -> HealthResponse:

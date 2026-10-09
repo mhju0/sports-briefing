@@ -27,7 +27,7 @@ In public mode the web process only reads SQLite, and nothing writes to it. The 
 | `sports-briefing-backup.service`, `sports-briefing-backup.timer` | `/etc/systemd/system/` |
 | `sports-briefing.env.example` | `/etc/sports-briefing.env` (root:sports-briefing, `0640`) |
 | `Caddyfile.example` | `/etc/caddy/Caddyfile` |
-| `backup.sh` | run in place from the checkout |
+| `backup.sh`, `backup.py` | run in place from the checkout |
 | `smoke_check.sh` | run in place against the local or public URL |
 
 Conventions used by the units:
@@ -118,7 +118,11 @@ systemctl list-timers sports-briefing-backup.timer
 The smoke check asserts:
 - `/health` is ok;
 - `/meta` reports public mode, with Arsenal `unavailable` and Texans/Scottie `demo`;
-- every `/timeline` item carries `data_mode: "demo"` and its demo labels.
+- both spoiler modes return Texans and Scottie demo items, with `data_mode: "demo"`, synthetic provider attribution and visible labels;
+- default output hides result objects;
+- restricted Arsenal and Texans briefing endpoints return `404`.
+
+Checks remain active when Python optimization is enabled. This verifies the API contract; inspect the actual client separately to verify visible demo labels.
 
 ## Logs
 
@@ -136,11 +140,14 @@ Uvicorn's access log records client IPs, which Caddy forwards and Uvicorn trusts
 ## Backups
 
 - **Schedule:** `sports-briefing-backup.timer` runs `backup.sh` daily, with a random delay of up to 15 minutes. `Persistent=true` catches up after downtime.
-- **Output:** `/var/lib/sports-briefing/backups/sports_briefing-<UTC stamp>.sqlite3`, owned by `sports-briefing` with mode `0640`. The newest 14 are kept; set `SPORTS_BRIEFING_BACKUP_KEEP` in the environment file to change this.
+- **Output:** `/var/lib/sports-briefing/backups/sports_briefing-<UTC stamp>.sqlite3`, owned by `sports-briefing` with mode `0640`. The newest 14 are kept; set `SPORTS_BRIEFING_BACKUP_KEEP` to a decimal integer from 1 to 10000 in the environment file to change this. Invalid values fail before creating or deleting files.
 - **Method:**
-  1. `sqlite3 .backup` (the online backup API) into a temporary file;
-  2. `PRAGMA integrity_check`;
-  3. an atomic rename.
+  1. acquire an exclusive directory lock to serialize creation and pruning;
+  2. Python `sqlite3.Connection.backup` into a unique temporary file;
+  3. `PRAGMA integrity_check`;
+  4. publish the completed file without replacing an existing backup, then prune older copies.
+
+  Retention only touches regular files with backup names; symlinks, unrelated names and the source database (including hard links) are excluded. The new successful copy is always retained. Failed copies leave older backups untouched. The helper uses Linux/macOS `fcntl` locks; no extra Python dependency is required.
 
   Any failure exits non-zero, so the systemd unit shows as failed.
 - **Contents:** the database only. The environment file holds no secrets and is not backed up.
@@ -151,7 +158,7 @@ Uvicorn's access log records client IPs, which Caddy forwards and Uvicorn trusts
 
 ```bash
 STATE=/var/lib/sports-briefing
-BACKUP=$STATE/backups/sports_briefing-<UTC stamp>.sqlite3   # pick from: ls $STATE/backups
+BACKUP=$STATE/backups/sports_briefing-<UTC stamp>-<unique suffix>.sqlite3   # pick from: ls $STATE/backups
 sudo systemctl stop sports-briefing
 sudo -u sports-briefing mv $STATE/sports_briefing.sqlite3 $STATE/sports_briefing.sqlite3.pre-restore-$(date -u +%Y%m%dT%H%M%SZ)
 sudo -u sports-briefing cp "$BACKUP" $STATE/sports_briefing.sqlite3
@@ -197,6 +204,6 @@ The planning budget is **$10–25/month** in total and owner-funded:
 
 It includes no paid sports provider and no LLM cost. Check current prices when provisioning.
 
-## Version note
+## Version
 
-`/meta` reports `0.2.0` from the API, while `pyproject.toml` still says `0.1.0`. History does not settle which is intended, so the mismatch is left for a separate decision.
+`sports_briefing.__version__` is the single version authority (`0.2.0`). Package metadata, OpenAPI and `/meta` all use it.

@@ -178,7 +178,7 @@ Provider ingestion is optional and local-only. Optional credential names are doc
 
 ## Testing
 
-The repository currently has **198 offline tests**.
+The repository currently has **212 offline tests**.
 
 ```bash
 .venv/bin/python -m unittest discover -s tests
@@ -212,6 +212,8 @@ Intentionally not complete yet:
 - no production LLM integration
 
 For detailed milestone state, blockers, and future work, see [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md).
+
+The [October 10 restart report](docs/reports/2026-10-10-restart/index.html) explains the remaining choices, compares provider options, and includes ten interactive UI concepts. It is an offline planning artifact with synthetic data, not an integrated or deployed client.
 
 ## Documentation
 
